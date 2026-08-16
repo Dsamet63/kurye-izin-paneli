@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kurye Haftalık İzin Paneli</title>
+<style>
+  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body { background-color: #efeae2; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  .card { background: #ffffff; width: 100%; max-width: 550px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); overflow: hidden; }
+  .header { background: #075e54; color: white; padding: 16px; text-align: center; }
+  .header h2 { margin: 0; font-size: 18px; }
+  .content { padding: 20px; }
+  .form-group { margin-bottom: 15px; }
+  label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; color: #075e54; }
+  input[type="text"], select { width: 100%; padding: 10px; border: 1.5px solid #ccc; border-radius: 8px; font-size: 14px; outline: none; background: white; }
+  input[type="text"]:focus, select:focus { border-color: #25d366; }
+  .btn { width: 100%; background: #25d366; color: white; border: none; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+  .btn:hover { background: #128c7e; }
+  .btn:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-danger { background: #d9534f; border: none; color: white; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
+  .btn-danger:hover { background: #c9302c; }
+  .btn-excel { background: #0275d8; margin-top: 5px; }
+  .btn-excel:hover { background: #025aa5; }
+  .poll-title { font-size: 15px; font-weight: bold; color: #075e54; margin-bottom: 4px; }
+  .poll-subtitle { font-size: 12px; color: #666; margin-bottom: 12px; }
+  .poll-option { display: flex; align-items: center; justify-content: space-between; background: #f0f2f5; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
+  .poll-option.disabled { opacity: 0.5; cursor: not-allowed; background: #e4e6eb; }
+  .poll-option input { accent-color: #128c7e; width: 18px; height: 18px; margin-right: 10px; }
+  .poll-label { display: flex; align-items: center; font-size: 14px; width: 100%; }
+  .badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #dcf8c6; color: #075e54; font-weight: bold; }
+  .badge.full { background: #ffebe9; color: #ce3c3e; }
+  .hidden { display: none; }
+  .user-bar { background: #dcf8c6; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 12px; color: #075e54; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+  th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+  th { background-color: #075e54; color: white; }
+  .loading { text-align: center; padding: 15px; color: #075e54; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <h2>Kurye Haftalık İzin Paneli</h2>
+  </div>
+  <div class="content">
+
+    <!-- ADIM 1: GİRİŞ EKRANI -->
+    <div id="step-login">
+      <div class="form-group">
+        <label>Ad Soyad</label>
+        <input type="text" id="nameInput" placeholder="Örn: Ahmet Yılmaz">
+      </div>
+      <div class="form-group">
+        <label>Tel NO</label>
+        <input type="text" id="tcInput" maxlength="11" placeholder="Örn: 05551238899">
+      </div>
+      <div class="form-group">
+        <label>Çalıştığınız Bölge</label>
+        <select id="regionSelect">
+          <option value="">-- Bölge Seçiniz --</option>
+          <option value="Bakırköy">Bakırköy</option>
+          <option value="Kemerburgaz">Kemerburgaz</option>
+          <option value="Zeytinburnu">Zeytinburnu</option>
+          <option value="Sarıyer">Sarıyer</option>
+          <option value="Zekeriyaköy">Zekeriyaköy</option>
+          <option value="Fındıkzade">Fındıkzade</option>
+          <option value="Eyüp Park">Eyüp Park</option>
+          <option value="Eyüp Axis">Eyüp Axis</option>
+          <option value="Eyüpsultan">Eyüpsultan</option>
+          <option value="Fatih">Fatih</option>
+          <option value="Bayrampaşa Cajun">Bayrampaşa Cajun</option>
+          <option value="Bayrampaşa Forum">Bayrampaşa Forum</option>
+        </select>
+      </div>
+      <button class="btn" onclick="login()">GİRİŞ YAP</button>
+    </div>
+
+    <!-- ADIM 2: ANKET VE SEÇİM EKRANI -->
+    <div id="step-poll" class="hidden">
+      <div class="user-bar" id="userInfo"></div>
+      <div class="poll-title">İzin Gününüzü Seçiniz</div>
+      <div class="poll-subtitle">Lütfen aşağıdaki günlerden birini işaretleyin:</div>
+      <div id="loadingText" class="loading">Veriler yükleniyor...</div>
+      <div id="daysList"></div>
+      <button class="btn" id="submitBtn" onclick="submitChoice()">KAYDET VE GÖNDER</button>
+    </div>
+
+    <!-- ADIM 3: BAŞARILI MESAJI -->
+    <div id="step-success" class="hidden" style="text-align: center; padding: 20px 0;">
+      <h3 style="color: #075e54; margin-bottom: 10px;">Talebiniz Kaydedildi!</h3>
+      <p id="successMsg" style="font-size: 14px; color: #555;"></p>
+    </div>
+
+    <!-- YÖNETİCİ PANELİ -->
+    <div id="step-admin" class="hidden">
+      <div class="poll-title">Gelen İzin Talepleri</div>
+      <div id="adminTableContainer"></div>
+      <button class="btn btn-excel" onclick="exportToCSV()">Excel / CSV Olarak İndir</button>
+      <button class="btn" onclick="location.reload()" style="background:#666;">Çıkış Yap</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbf4rDR7ICIHXENQzcPnz2X2A0B9w6DSTRgEgTRIeyWZuxngdmepQMTMXo0WzxW-806Q/exec";
+
+  const regionLimits = {
+    "Bakırköy": { "Pazartesi": 8, "Salı": 5, "Çarşamba": 8, "Perşembe": 8, "Cuma": 8, "Cumartesi": 8, "Pazar": 8 },
+    "Zeytinburnu": { "Pazartesi": 8, "Salı": 5, "Çarşamba": 8, "Perşembe": 8, "Cuma": 8, "Cumartesi": 8, "Pazar": 8 },
+    "Sarıyer": { "Pazartesi": 8, "Salı": 5, "Çarşamba": 8, "Perşembe": 8, "Cuma": 8, "Cumartesi": 8, "Pazar": 8 },
+    "Zekeriyaköy": { "Pazartesi": 8, "Salı": 5, "Çarşamba": 8, "Perşembe": 8, "Cuma": 8, "Cumartesi": 8, "Pazar": 8 },
+    "Fındıkzade": { "Pazartesi": 8, "Salı": 5, "Çarşamba": 8, "Perşembe": 8, "Cuma": 8, "Cumartesi": 8, "Pazar": 8 },
+    "Fatih": { "Pazartesi": 8, "Salı": 5, "Çarşamba": 8, "Perşembe": 8, "Cuma": 8, "Cumartesi": 8, "Pazar": 8 },
+    "Bayrampaşa Cajun": { "Pazartesi": 8, "Salı": 5, "Çarşamba": 8, "Perşembe": 8, "Cuma": 8, "Cumartesi": 8, "Pazar": 8 },
+    "Bayrampaşa Forum": { "Pazartesi": 8, "Salı": 5, "Çarşamba": 8, "Perşembe": 8, "Cuma": 8, "Cumartesi": 8, "Pazar": 8 },
+    "Eyüp Park": { "Pazartesi": 8, "Salı": 5, "Çarşamba": 8, "Perşembe": 8, "Cuma": 8, "Cumartesi": 8, "Pazar": 8 },
+    "Eyüp Axis": { "Pazartesi": 8, "Salı": 5, "Çarşamba": 8, "Perşembe": 8, "Cuma": 8, "Cumartesi": 8, "Pazar": 8 },
+    "Eyüpsultan": { "Pazartesi": 8, "Salı": 5, "Çarşamba": 8, "Perşembe": 8, "Cuma": 8, "Cumartesi": 8, "Pazar": 8 },
+    "Kemerburgaz": { "Pazartesi": 5, "Salı": 3, "Çarşamba": 5, "Perşembe": 5, "Cuma": 5, "Cumartesi": 5, "Pazar": 5 }
+  };
+
+  let currentUser = {};
+  let allRequests = [];
+
+  async function login() {
+    const name = document.getElementById('nameInput').value.trim();
+    const tc = document.getElementById('tcInput').value.trim();
+    const region = document.getElementById('regionSelect').value;
+
+    if (name.toLowerCase() === 'admin') {
+      showAdminPanel();
+      return;
+    }
+
+    if (!name || tc.length !== 11 || !region) {
+      alert('Lütfen Ad Soyad, 11 haneli Telefon / TC Numarası ve Bölge alanlarını eksiksiz doldurunuz.');
+      return;
+    }
+
+    currentUser = { name, tc, region };
+    document.getElementById('userInfo').innerHTML = `<b>Kurye:</b> ${name} | <b>Bölge:</b> ${region} | <b>Tel:</b> ${tc}`;
+    document.getElementById('step-login').classList.add('hidden');
+    document.getElementById('step-poll').classList.remove('hidden');
+
+    await fetchAndRenderDays();
+  }
+
+  async function fetchAndRenderDays() {
+    document.getElementById('loadingText').style.display = 'block';
+    document.getElementById('daysList').innerHTML = '';
+
+    try {
+      const response = await fetch(SCRIPT_URL);
+      const rows = await response.json();
+      allRequests = rows;
+
+      const existingUser = rows.find(r => r[2] == currentUser.tc);
+      if (existingUser) {
+        alert(`HATA: ${currentUser.tc} numarası ile daha önce ${existingUser[0]} bölgesi için "${existingUser[3]}" günü izin seçilmiştir!`);
+        location.reload();
+        return;
+      }
+
+      renderDays(rows);
+    } catch (error) {
+      alert("Veriler yüklenirken bir hata oluştu. Lütfen tekrar deneyin.");
+    } finally {
+      document.getElementById('loadingText').style.display = 'none';
+    }
+  }
+
+  function renderDays(rows) {
+    const container = document.getElementById('daysList');
+    container.innerHTML = '';
+
+    const currentRegionLimits = regionLimits[currentUser.region];
+    const regionCounts = { "Pazartesi": 0, "Salı": 0, "Çarşamba": 0, "Perşembe": 0, "Cuma": 0, "Cumartesi": 0, "Pazar": 0 };
+
+    rows.forEach(r => {
+      const reg = r[0];
+      const day = r[3];
+      if (reg === currentUser.region && regionCounts[day] !== undefined) {
+        regionCounts[day]++;
+      }
+    });
+
+    Object.keys(currentRegionLimits).forEach(day => {
+      const current = regionCounts[day] || 0;
+      const max = currentRegionLimits[day];
+      const isFull = current >= max;
+
+      const div = document.createElement('div');
+      div.className = `poll-option ${isFull ? 'disabled' : ''}`;
+      div.innerHTML = `
+        <label class="poll-label">
+          <input type="radio" name="dayOption" value="${day}" ${isFull ? 'disabled' : ''}>
+          <span>${day}</span>
+        </label>
+        <span class="badge ${isFull ? 'full' : ''}">${isFull ? 'DOLDU' : (max - current) + ' Kontenjan'}</span>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  async function submitChoice() {
+    const selected = document.querySelector('input[name="dayOption"]:checked');
+    if (!selected) {
+      alert('Lütfen listeden boş olan bir gün seçiniz.');
+      return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerText = "Kaydediliyor...";
+
+    const chosenDay = selected.value;
+    const payload = {
+      region: currentUser.region,
+      name: currentUser.name,
+      tc: currentUser.tc,
+      day: chosenDay,
+      date: new Date().toLocaleString('tr-TR')
+    };
+
+    try {
+      await fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      document.getElementById('step-poll').classList.add('hidden');
+      document.getElementById('step-success').classList.remove('hidden');
+      document.getElementById('successMsg').innerText = `Sayın ${currentUser.name}, ${currentUser.region} bölgesi için ${chosenDay} gününe izin talebiniz başarıyla alınmıştır.`;
+    } catch (error) {
+      alert("İşlem sırasında hata oluştu. Lütfen tekrar deneyiniz.");
+      btn.disabled = false;
+      btn.innerText = "KAYDET VE GÖNDER";
+    }
+  }
+
+  async function showAdminPanel() {
+    document.getElementById('step-login').classList.add('hidden');
+    document.getElementById('step-admin').classList.remove('hidden');
+    const container = document.getElementById('adminTableContainer');
+    container.innerHTML = '<p class="loading">Kayıtlar yükleniyor...</p>';
+
+    try {
+      const response = await fetch(SCRIPT_URL);
+      let rows = await response.json();
+      
+      if (!rows || rows.length === 0) {
+        container.innerHTML = '<p style="font-size:13px; color:#666;">Henüz izin talebi bulunmuyor.</p>';
+        return;
+      }
+
+      rows.sort((a, b) => {
+        const regionCompare = String(a[0]).localeCompare(String(b[0]), 'tr');
+        if (regionCompare !== 0) return regionCompare;
+        return String(a[1]).localeCompare(String(b[1]), 'tr');
+      });
+
+      allRequests = rows;
+
+      let html = `<table>
+        <tr>
+          <th>Bölge</th>
+          <th>Ad Soyad</th>
+          <th>Tel No</th>
+          <th>Seçilen Gün</th>
+          <th>İşlem</th>
+        </tr>`;
+
+      rows.forEach(r => {
+        html += `<tr>
+          <td><b>${r[0]}</b></td>
+          <td>${r[1]}</td>
+          <td>${r[2]}</td>
+          <td><b>${r[3]}</b></td>
+          <td><button class="btn-danger" onclick="deleteRequest('${r[2]}', '${r[1]}')">Sil</button></td>
+        </tr>`;
+      });
+
+      html += '</table>';
+      container.innerHTML = html;
+    } catch (e) {
+      container.innerHTML = '<p style="color:red;">Veriler çekilirken bir hata oluştu.</p>';
+    }
+  }
+
+  async function deleteRequest(tc, name) {
+    if (!confirm(`${name} isimli kuryenin izin talebini silmek istediğinize emin misiniz?`)) return;
+
+    try {
+      await fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", tc: tc })
+      });
+
+      alert("Talep silindi.");
+      showAdminPanel(); // Tabloyu yenile
+    } catch (e) {
+      alert("Silme işlemi sırasında hata oluştu.");
+    }
+  }
+
+  function exportToCSV() {
+    if (!allRequests || allRequests.length === 0) { alert('İndirilecek veri yok.'); return; }
+
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFFBolge,Ad Soyad,Tel No,Secilen Gun,Tarih\n";
+    allRequests.forEach(r => {
+      csvContent += `"${r[0]}","${r[1]}","${r[2]}","${r[3]}","${r[4]}"\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "kurye_bolgesel_izin_listesi.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+</script>
+
+</body>
+</html>
