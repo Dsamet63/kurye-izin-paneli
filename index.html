@@ -125,28 +125,23 @@
   let currentUser = {};
   let allRequests = [];
 
-  async function login() {
-    const name = document.getElementById('nameInput').value.trim();
-    const tc = document.getElementById('tcInput').value.trim();
-    const region = document.getElementById('regionSelect').value;
+ async function login() {
+  const name = document.getElementById('nameInput').value.trim();
+  const tc = document.getElementById('tcInput').value.trim();
+  const region = document.getElementById('regionSelect').value;
 
-    if (name.toLowerCase() === 'fiyuuavrupa') {
-      showAdminPanel();
-      return;
-    }
-
-    if (!name || tc.length !== 11 || !region) {
-      alert('Lütfen Ad Soyad, 11 haneli Telefon / TC Numarası ve Bölge alanlarını eksiksiz doldurunuz.');
-      return;
-    }
-
-    currentUser = { name, tc, region };
-    document.getElementById('userInfo').innerHTML = `<b>Kurye:</b> ${name} | <b>Bölge:</b> ${region} | <b>Tel:</b> ${tc}`;
-    document.getElementById('step-login').classList.add('hidden');
-    document.getElementById('step-poll').classList.remove('hidden');
-
-    await fetchAndRenderDays();
+  if (!name || tc.length !== 11 || !region) {
+    alert('Lütfen Ad Soyad, 11 haneli Telefon / TC Numarası ve Bölge alanlarını eksiksiz doldurunuz.');
+    return;
   }
+
+  currentUser = { name, tc, region };
+  document.getElementById('userInfo').innerHTML = `<b>Kurye:</b> ${name} | <b>Bölge:</b> ${region} | <b>Tel:</b> ${tc}`;
+  document.getElementById('step-login').classList.add('hidden');
+  document.getElementById('step-poll').classList.remove('hidden');
+
+  await fetchAndRenderDays();
+}
 
   async function fetchAndRenderDays() {
     document.getElementById('loadingText').style.display = 'block';
