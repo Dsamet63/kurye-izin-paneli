@@ -18,10 +18,6 @@
   .btn { width: 100%; background: #25d366; color: white; border: none; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 10px; }
   .btn:hover { background: #128c7e; }
   .btn:disabled { background: #ccc; cursor: not-allowed; }
-  .btn-danger { background: #d9534f; border: none; color: white; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
-  .btn-danger:hover { background: #c9302c; }
-  .btn-excel { background: #0275d8; margin-top: 5px; }
-  .btn-excel:hover { background: #025aa5; }
   .poll-title { font-size: 15px; font-weight: bold; color: #075e54; margin-bottom: 4px; }
   .poll-subtitle { font-size: 12px; color: #666; margin-bottom: 12px; }
   .poll-option { display: flex; align-items: center; justify-content: space-between; background: #f0f2f5; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
@@ -32,9 +28,6 @@
   .badge.full { background: #ffebe9; color: #ce3c3e; }
   .hidden { display: none; }
   .user-bar { background: #dcf8c6; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 12px; color: #075e54; }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
-  th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-  th { background-color: #075e54; color: white; }
   .loading { text-align: center; padding: 15px; color: #075e54; font-weight: bold; }
 </style>
 </head>
@@ -93,14 +86,6 @@
       <p id="successMsg" style="font-size: 14px; color: #555;"></p>
     </div>
 
-    <!-- YÖNETİCİ PANELİ -->
-    <div id="step-admin" class="hidden">
-      <div class="poll-title">Gelen İzin Talepleri</div>
-      <div id="adminTableContainer"></div>
-      <button class="btn btn-excel" onclick="exportToCSV()">Excel / CSV Olarak İndir</button>
-      <button class="btn" onclick="location.reload()" style="background:#666;">Çıkış Yap</button>
-    </div>
-
   </div>
 </div>
 
@@ -123,25 +108,24 @@
   };
 
   let currentUser = {};
-  let allRequests = [];
 
- async function login() {
-  const name = document.getElementById('nameInput').value.trim();
-  const tc = document.getElementById('tcInput').value.trim();
-  const region = document.getElementById('regionSelect').value;
+  async function login() {
+    const name = document.getElementById('nameInput').value.trim();
+    const tc = document.getElementById('tcInput').value.trim();
+    const region = document.getElementById('regionSelect').value;
 
-  if (!name || tc.length !== 11 || !region) {
-    alert('Lütfen Ad Soyad, 11 haneli Telefon / TC Numarası ve Bölge alanlarını eksiksiz doldurunuz.');
-    return;
+    if (!name || tc.length !== 11 || !region) {
+      alert('Lütfen Ad Soyad, 11 haneli Telefon / TC Numarası ve Bölge alanlarını eksiksiz doldurunuz.');
+      return;
+    }
+
+    currentUser = { name, tc, region };
+    document.getElementById('userInfo').innerHTML = `<b>Kurye:</b> ${name} | <b>Bölge:</b> ${region} | <b>Tel:</b> ${tc}`;
+    document.getElementById('step-login').classList.add('hidden');
+    document.getElementById('step-poll').classList.remove('hidden');
+
+    await fetchAndRenderDays();
   }
-
-  currentUser = { name, tc, region };
-  document.getElementById('userInfo').innerHTML = `<b>Kurye:</b> ${name} | <b>Bölge:</b> ${region} | <b>Tel:</b> ${tc}`;
-  document.getElementById('step-login').classList.add('hidden');
-  document.getElementById('step-poll').classList.remove('hidden');
-
-  await fetchAndRenderDays();
-}
 
   async function fetchAndRenderDays() {
     document.getElementById('loadingText').style.display = 'block';
@@ -150,7 +134,6 @@
     try {
       const response = await fetch(SCRIPT_URL);
       const rows = await response.json();
-      allRequests = rows;
 
       const existingUser = rows.find(r => r[2] == currentUser.tc);
       if (existingUser) {
@@ -236,90 +219,6 @@
       btn.disabled = false;
       btn.innerText = "KAYDET VE GÖNDER";
     }
-  }
-
-  async function showAdminPanel() {
-    document.getElementById('step-login').classList.add('hidden');
-    document.getElementById('step-admin').classList.remove('hidden');
-    const container = document.getElementById('adminTableContainer');
-    container.innerHTML = '<p class="loading">Kayıtlar yükleniyor...</p>';
-
-    try {
-      const response = await fetch(SCRIPT_URL);
-      let rows = await response.json();
-      
-      if (!rows || rows.length === 0) {
-        container.innerHTML = '<p style="font-size:13px; color:#666;">Henüz izin talebi bulunmuyor.</p>';
-        return;
-      }
-
-      rows.sort((a, b) => {
-        const regionCompare = String(a[0]).localeCompare(String(b[0]), 'tr');
-        if (regionCompare !== 0) return regionCompare;
-        return String(a[1]).localeCompare(String(b[1]), 'tr');
-      });
-
-      allRequests = rows;
-
-      let html = `<table>
-        <tr>
-          <th>Bölge</th>
-          <th>Ad Soyad</th>
-          <th>Tel No</th>
-          <th>Seçilen Gün</th>
-          <th>İşlem</th>
-        </tr>`;
-
-      rows.forEach(r => {
-        html += `<tr>
-          <td><b>${r[0]}</b></td>
-          <td>${r[1]}</td>
-          <td>${r[2]}</td>
-          <td><b>${r[3]}</b></td>
-          <td><button class="btn-danger" onclick="deleteRequest('${r[2]}', '${r[1]}')">Sil</button></td>
-        </tr>`;
-      });
-
-      html += '</table>';
-      container.innerHTML = html;
-    } catch (e) {
-      container.innerHTML = '<p style="color:red;">Veriler çekilirken bir hata oluştu.</p>';
-    }
-  }
-
-  async function deleteRequest(tc, name) {
-    if (!confirm(`${name} isimli kuryenin izin talebini silmek istediğinize emin misiniz?`)) return;
-
-    try {
-      await fetch(SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", tc: tc })
-      });
-
-      alert("Talep silindi.");
-      showAdminPanel(); // Tabloyu yenile
-    } catch (e) {
-      alert("Silme işlemi sırasında hata oluştu.");
-    }
-  }
-
-  function exportToCSV() {
-    if (!allRequests || allRequests.length === 0) { alert('İndirilecek veri yok.'); return; }
-
-    let csvContent = "data:text/csv;charset=utf-8,\uFEFFBolge,Ad Soyad,Tel No,Secilen Gun,Tarih\n";
-    allRequests.forEach(r => {
-      csvContent += `"${r[0]}","${r[1]}","${r[2]}","${r[3]}","${r[4]}"\n`;
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "kurye_bolgesel_izin_listesi.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   }
 </script>
 
