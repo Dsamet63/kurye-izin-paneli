@@ -43,7 +43,7 @@
     <div id="step-login">
       <div class="form-group">
         <label>Telefon Numarası</label>
-        <input type="text" id="tcInput" maxlength="11" placeholder="Örn: 05551238899">
+        <input type="text" id="tcInput" maxlength="11" placeholder="Örn: 05384125060">
       </div>
       <button class="btn" id="loginBtn" onclick="login()">GİRİŞ YAP</button>
     </div>
@@ -68,6 +68,7 @@
 </div>
 
 <script>
+  // Kendi Apps Script URL'nizi buraya yapıştırın (/exec ile biten)
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbf4rDR7ICIHXENQzcPnz2X2A0B9w6DSTRgEgTRIeyWZuxngdmepQMTMXo0WzxW-806Q/exec";
 
   const regionLimits = {
@@ -91,8 +92,8 @@
     const tc = document.getElementById('tcInput').value.trim();
     const loginBtn = document.getElementById('loginBtn');
 
-    if (tc.length !== 11) {
-      alert('Lütfen 11 haneli Telefon numaranızı giriniz.');
+    if (tc.length < 10) {
+      alert('Lütfen geçerli bir telefon numarası giriniz.');
       return;
     }
 
@@ -100,18 +101,14 @@
     loginBtn.innerText = "Sorgulanıyor...";
 
     try {
-      // Backend'den kullanıcı ve izin verilerini çek
-      const response = await fetch(`${SCRIPT_URL}?action=getUserData&phone=${tc}`);
+      const response = await fetch(`${SCRIPT_URL}?action=getUserData&phone=${encodeURIComponent(tc)}`);
       const result = await response.json();
 
       if (result.error) {
         alert(result.message);
-        loginBtn.disabled = false;
-        loginBtn.innerText = "GİRİŞ YAP";
         return;
       }
 
-      // Kullanıcı verileri ayarlanır
       currentUser = {
         tc: tc,
         name: result.user.name,
@@ -122,7 +119,6 @@
       document.getElementById('step-login').classList.add('hidden');
       document.getElementById('step-poll').classList.remove('hidden');
 
-      // Eğer kullanıcı daha önce seçim yaptıysa engelle
       if (result.hasSubmitted) {
         alert(`HATA: ${currentUser.tc} numarası ile daha önce ${result.submittedData.region} bölgesi için "${result.submittedData.day}" günü izin seçilmiştir!`);
         location.reload();
