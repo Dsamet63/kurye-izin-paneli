@@ -130,17 +130,24 @@
   }
 
   async function loadAllData() {
-    try {
-      const res = await fetch(`${SCRIPT_URL}?action=getAdminData`);
-      adminData = await res.json();
-      
-      renderSubmissions();
-      renderLimitsSelect();
-      renderUsers();
-    } catch (e) {
-      alert("Veriler çekilirken hata oluştu!");
+  try {
+    // Parametrenin URL'e açıkça eklendiğinden emin olun
+    const res = await fetch(`${SCRIPT_URL}?action=getAdminData`);
+    const data = await res.json();
+    
+    if (data.error) {
+      alert("Hata: " + data.message);
+      return;
     }
+
+    adminData = data;
+    renderSubmissions();
+    renderLimitsSelect();
+    renderUsers();
+  } catch (e) {
+    alert("Veriler çekilirken hata oluştu!");
   }
+}
 
   // 1. TALEPLERİ LİSTELEME VE SİLME
   function renderSubmissions() {
