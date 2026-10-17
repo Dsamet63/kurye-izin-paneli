@@ -3,97 +3,140 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kurye Haftalık İzin Paneli</title>
+<title>Kurye İzin Paneli</title>
 <style>
-  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  body { background-color: #efeae2; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-  .card { background: #ffffff; width: 100%; max-width: 550px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); overflow: hidden; }
-  .header { background: #075e54; color: white; padding: 16px; text-align: center; }
-  .header h2 { margin: 0; font-size: 18px; }
-  .content { padding: 20px; }
-  .form-group { margin-bottom: 15px; }
-  label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; color: #075e54; }
-  input[type="text"] { width: 100%; padding: 10px; border: 1.5px solid #ccc; border-radius: 8px; font-size: 14px; outline: none; background: white; }
-  input[type="text"]:focus { border-color: #25d366; }
-  .btn { width: 100%; background: #25d366; color: white; border: none; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 10px; }
-  .btn:hover { background: #128c7e; }
-  .btn:disabled { background: #ccc; cursor: not-allowed; }
-  .poll-title { font-size: 15px; font-weight: bold; color: #075e54; margin-bottom: 4px; }
-  .poll-subtitle { font-size: 12px; color: #666; margin-bottom: 12px; }
-  .poll-option { display: flex; align-items: center; justify-content: space-between; background: #f0f2f5; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
-  .poll-option.disabled { opacity: 0.5; cursor: not-allowed; background: #e4e6eb; }
-  .poll-option input { accent-color: #128c7e; width: 18px; height: 18px; margin-right: 10px; }
-  .poll-label { display: flex; align-items: center; font-size: 14px; width: 100%; cursor: pointer; }
-  .badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #dcf8c6; color: #075e54; font-weight: bold; }
-  .badge.full { background: #ffebe9; color: #ce3c3e; }
-  .hidden { display: none; }
-  .user-bar { background: #dcf8c6; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 12px; color: #075e54; }
-  .loading { text-align: center; padding: 15px; color: #075e54; font-weight: bold; }
+  :root {
+    --primary: #0f766e;
+    --primary-hover: #0d9488;
+    --bg-main: #f1f5f9;
+    --card-bg: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+  }
+
+  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
+  body { background-color: var(--bg-main); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 16px; color: var(--text-main); }
+  
+  .card { background: var(--card-bg); width: 100%; max-width: 480px; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01); overflow: hidden; border: 1px solid var(--border-color); }
+  .header { background: linear-gradient(135deg, #0f766e 0%, #042f2e 100%); color: white; padding: 24px 20px; text-align: center; }
+  .header h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .header p { font-size: 13px; opacity: 0.85; margin-top: 4px; font-weight: 400; }
+  
+  .content { padding: 24px; }
+  .form-group { margin-bottom: 20px; }
+  label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 13px; color: var(--text-main); }
+  input[type="text"] { width: 100%; padding: 14px 16px; border: 1.5px solid var(--border-color); border-radius: 12px; font-size: 15px; outline: none; background: #f8fafc; transition: all 0.2s ease; }
+  input[type="text"]:focus { border-color: var(--primary); background: #ffffff; box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.1); }
+  
+  .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 15px; font-size: 15px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; display: flex; justify-content: center; align-items: center; gap: 8px; }
+  .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+  .btn:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
+  
+  .user-bar { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px; border-radius: 12px; margin-bottom: 20px; font-size: 13px; color: #166534; display: flex; flex-direction: column; gap: 4px; }
+  .user-bar-title { font-weight: 700; font-size: 14px; }
+  
+  .poll-title { font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+  .poll-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+  
+  .poll-option { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1.5px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s ease; }
+  .poll-option:hover:not(.disabled) { border-color: var(--primary); background: #f0fdfa; }
+  .poll-option.disabled { opacity: 0.55; cursor: not-allowed; background: #f8fafc; border-color: #e2e8f0; }
+  
+  .poll-label { display: flex; align-items: center; font-size: 15px; font-weight: 600; width: 100%; cursor: pointer; }
+  .poll-option input { accent-color: var(--primary); width: 20px; height: 20px; margin-right: 12px; cursor: pointer; }
+  .poll-option.disabled input { cursor: not-allowed; }
+  
+  .badge { font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #ecfdf5; color: #047857; font-weight: 700; white-space: nowrap; }
+  .badge.full { background: #fef2f2; color: #dc2626; }
+  
+  .hidden { display: none !important; }
+  .loading { text-align: center; padding: 20px; color: var(--text-muted); font-size: 14px; font-weight: 600; }
+  
+  .alert-box { padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; font-weight: 500; }
+  .alert-danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 </style>
 </head>
 <body>
 
 <div class="card">
   <div class="header">
-    <h2>Kurye Haftalık İzin Paneli</h2>
+    <h2>Kurye İzin Paneli</h2>
+    <p>Haftalık İzin Talebi Oluşturma</p>
   </div>
   <div class="content">
 
     <!-- ADIM 1: GİRİŞ EKRANI -->
     <div id="step-login">
+      <div id="loginError" class="alert-box alert-danger hidden"></div>
       <div class="form-group">
         <label>Telefon Numarası</label>
-        <input type="text" id="tcInput" maxlength="11" placeholder="Örn: 05384125060">
+        <input type="text" id="tcInput" maxlength="11" placeholder="Örn: 05384125060" inputmode="numeric">
       </div>
       <button class="btn" id="loginBtn" onclick="login()">GİRİŞ YAP</button>
     </div>
 
-    <!-- ADIM 2: ANKET VE SEÇİM EKRANI -->
+    <!-- ADIM 2: SEÇİM EKRANI -->
     <div id="step-poll" class="hidden">
       <div class="user-bar" id="userInfo"></div>
+      <div id="submitError" class="alert-box alert-danger hidden"></div>
       <div class="poll-title">İzin Gününüzü Seçiniz</div>
-      <div class="poll-subtitle">Lütfen aşağıdaki günlerden birini işaretleyin:</div>
-      <div id="loadingText" class="loading">Veriler yükleniyor...</div>
+      <div class="poll-subtitle">Lütfen aşağıdan müsait olan günlerden birini işaretleyin:</div>
+      <div id="loadingText" class="loading">Güncel kontenjanlar alınıyor...</div>
       <div id="daysList"></div>
       <button class="btn" id="submitBtn" onclick="submitChoice()">KAYDET VE GÖNDER</button>
     </div>
 
     <!-- ADIM 3: BAŞARILI MESAJI -->
     <div id="step-success" class="hidden" style="text-align: center; padding: 20px 0;">
-      <h3 style="color: #075e54; margin-bottom: 10px;">Talebiniz Kaydedildi!</h3>
-      <p id="successMsg" style="font-size: 14px; color: #555;"></p>
+      <div style="font-size: 48px; margin-bottom: 12px;">✅</div>
+      <h3 style="color: var(--primary); margin-bottom: 8px; font-size: 18px;">Talebiniz Onaylandı!</h3>
+      <p id="successMsg" style="font-size: 14px; color: var(--text-muted); line-height: 1.5;"></p>
     </div>
 
   </div>
 </div>
 
 <script>
-  // Kendi Apps Script URL'nizi buraya yapıştırın (/exec ile biten)
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzX2IlQj6B2J6J7G4utp0Bg49uZKluX11vSl3L8VwS3b2yysm5D0pzujgaDaDql4BFPog/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbf4rDR7ICIHXENQzcPnz2X2A0B9w6DSTRgEgTRIeyWZuxngdmepQMTMXo0WzxW-806Q/exec";
 
   const regionLimits = {
-    "Bakırköy": { "Pazartesi": 6, "Salı": 6, "Çarşamba": 5, "Perşembe": 5, "Cuma": 4, "Cumartesi": 4, "Pazar": 4 },
-    "Zeytinburnu": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 5, "Cuma": 4, "Cumartesi": 4, "Pazar": 3 },
-    "Sarıyer": { "Pazartesi": 2, "Salı": 2, "Çarşamba": 2, "Perşembe": 2, "Cuma": 2, "Cumartesi": 1, "Pazar": 1 },
-    "Zekeriyaköy": { "Pazartesi": 1, "Salı": 1, "Çarşamba": 1, "Perşembe": 1, "Cuma": 1, "Cumartesi": 1, "Pazar": 1 },
-    "Fındıkzade": { "Pazartesi": 1, "Salı": 1, "Çarşamba": 1, "Perşembe": 1, "Cuma": 1, "Cumartesi": 1, "Pazar": 1 },
-    "Fatih": { "Pazartesi": 4, "Salı": 4, "Çarşamba": 4, "Perşembe": 4, "Cuma": 3, "Cumartesi": 2, "Pazar": 2 },
-    "Bayrampaşa Cajun": { "Pazartesi": 2, "Salı": 2, "Çarşamba": 2, "Perşembe": 1, "Cuma": 1, "Cumartesi": 1, "Pazar": 1 },
-    "Bayrampaşa Forum": { "Pazartesi": 1, "Salı": 1, "Çarşamba": 1, "Perşembe": 1, "Cuma": 1, "Cumartesi": 1, "Pazar": 1 },
-    "Eyüp Park": { "Pazartesi": 3, "Salı": 2, "Çarşamba": 2, "Perşembe": 2, "Cuma": 2, "Cumartesi": 2, "Pazar": 2 },
-    "Eyüp Axis": { "Pazartesi": 3, "Salı": 2, "Çarşamba": 2, "Perşembe": 2, "Cuma": 2, "Cumartesi": 2, "Pazar": 2 },
-    "Eyüpsultan": { "Pazartesi": 2, "Salı": 2, "Çarşamba": 1, "Perşembe": 1, "Cuma": 1, "Cumartesi": 1, "Pazar": 1 },
-    "Kemerburgaz": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 4, "Cuma": 3, "Cumartesi": 2, "Pazar": 2 }
+    "Bakırköy": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 5, "Cuma": 5, "Cumartesi": 4, "Pazar": 4 },
+    "Zeytinburnu": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 5, "Cuma": 5, "Cumartesi": 4, "Pazar": 4 },
+    "Sarıyer": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 5, "Cuma": 5, "Cumartesi": 5, "Pazar": 3 },
+    "Zekeriyaköy": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 5, "Cuma": 5, "Cumartesi": 3, "Pazar": 3 },
+    "Fındıkzade": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 5, "Cuma": 5, "Cumartesi": 3, "Pazar": 3 },
+    "Fatih": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 5, "Cuma": 8, "Cumartesi": 4, "Pazar": 4 },
+    "Bayrampaşa Cajun": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 5, "Cuma": 5, "Cumartesi": 3, "Pazar": 3 },
+    "Bayrampaşa Forum": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 5, "Cuma": 5, "Cumartesi": 3, "Pazar": 3 },
+    "Eyüp Park": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 5, "Cuma": 5, "Cumartesi": 3, "Pazar": 3 },
+    "Eyüp Axis": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 5, "Cuma": 5, "Cumartesi": 3, "Pazar": 3 },
+    "Eyüpsultan": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 5, "Cuma": 5, "Cumartesi": 3, "Pazar": 3 },
+    "Kemerburgaz": { "Pazartesi": 5, "Salı": 5, "Çarşamba": 5, "Perşembe": 5, "Cuma": 5, "Cumartesi": 4, "Pazar": 4 }
   };
 
   let currentUser = {};
 
+  function showError(elementId, msg) {
+    const el = document.getElementById(elementId);
+    el.innerText = msg;
+    el.classList.remove('hidden');
+  }
+
+  function hideErrors() {
+    document.getElementById('loginError').classList.add('hidden');
+    document.getElementById('submitError').classList.add('hidden');
+  }
+
   async function login() {
+    hideErrors();
     const tc = document.getElementById('tcInput').value.trim();
     const loginBtn = document.getElementById('loginBtn');
 
     if (tc.length < 10) {
-      alert('Lütfen geçerli bir telefon numarası giriniz.');
+      showError('loginError', 'Lütfen geçerli bir telefon numarası giriniz.');
       return;
     }
 
@@ -105,7 +148,7 @@
       const result = await response.json();
 
       if (result.error) {
-        alert(result.message);
+        showError('loginError', result.message);
         return;
       }
 
@@ -115,19 +158,22 @@
         region: result.user.region
       };
 
-      document.getElementById('userInfo').innerHTML = `<b>Kurye:</b> ${currentUser.name} | <b>Bölge:</b> ${currentUser.region} | <b>Tel:</b> ${currentUser.tc}`;
+      document.getElementById('userInfo').innerHTML = `
+        <div class="user-bar-title">${currentUser.name}</div>
+        <div>Bölge: <b>${currentUser.region}</b> | Tel: ${currentUser.tc}</div>
+      `;
       document.getElementById('step-login').classList.add('hidden');
       document.getElementById('step-poll').classList.remove('hidden');
 
       if (result.hasSubmitted) {
-        alert(`HATA: ${currentUser.tc} numarası ile daha önce ${result.submittedData.region} bölgesi için "${result.submittedData.day}" günü izin seçilmiştir!`);
+        alert(`Bilgi: ${currentUser.tc} numarası ile daha önce ${result.submittedData.region} bölgesi için "${result.submittedData.day}" gününü seçtiniz.`);
         location.reload();
         return;
       }
 
       renderDays(result.submissions || []);
     } catch (error) {
-      alert("Sisteme erişilirken bir hata oluştu. Lütfen tekrar deneyiniz.");
+      showError('loginError', 'Sisteme bağlanırken hata oluştu. Lütfen tekrar deneyiniz.');
     } finally {
       loginBtn.disabled = false;
       loginBtn.innerText = "GİRİŞ YAP";
@@ -141,7 +187,7 @@
 
     const currentRegionLimits = regionLimits[currentUser.region];
     if (!currentRegionLimits) {
-      alert("Tanımlı bölgeniz için limit ayarı bulunamadı.");
+      showError('submitError', 'Tanımlı bölgeniz için sistemde limit ayarı bulunamadı.');
       return;
     }
 
@@ -174,15 +220,16 @@
   }
 
   async function submitChoice() {
+    hideErrors();
     const selected = document.querySelector('input[name="dayOption"]:checked');
     if (!selected) {
-      alert('Lütfen listeden boş olan bir gün seçiniz.');
+      showError('submitError', 'Lütfen listeden kontenjanı uygun bir gün seçiniz.');
       return;
     }
 
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    btn.innerText = "Kaydediliyor...";
+    btn.innerText = "Kontrol Ediliyor ve Kaydediliyor...";
 
     const chosenDay = selected.value;
     const payload = {
@@ -194,18 +241,27 @@
     };
 
     try {
-      await fetch(SCRIPT_URL, {
+      const response = await fetch(SCRIPT_URL, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain" },
         body: JSON.stringify(payload)
       });
+      
+      const result = await response.json();
+
+      if (result.error) {
+        showError('submitError', result.message);
+        btn.disabled = false;
+        btn.innerText = "KAYDET VE GÖNDER";
+        return;
+      }
 
       document.getElementById('step-poll').classList.add('hidden');
       document.getElementById('step-success').classList.remove('hidden');
-      document.getElementById('successMsg').innerText = `Sayın ${currentUser.name}, ${currentUser.region} bölgesi için ${chosenDay} gününe izin talebiniz başarıyla alınmıştır.`;
+      document.getElementById('successMsg').innerHTML = `Sayın <b>${currentUser.name}</b>,<br><b>${currentUser.region}</b> bölgesi için <b>${chosenDay}</b> gününe izin talebiniz başarıyla onaylanmıştır.`;
+
     } catch (error) {
-      alert("İşlem sırasında hata oluştu. Lütfen tekrar deneyiniz.");
+      showError('submitError', 'İşlem sırasında sunucu hatası oluştu. Lütfen tekrar deneyiniz.');
       btn.disabled = false;
       btn.innerText = "KAYDET VE GÖNDER";
     }
