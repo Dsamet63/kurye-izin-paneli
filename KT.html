@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saha Operasyon & Akıllı Vardiya Planlama</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS (Excel İndirme Kütüphanesi) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Top Navigation -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-lg text-white font-bold"><i class="fa-solid fa-brain text-xl"></i></div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-wide">Akıllı Saha Operasyon Paneli</h1>
+                    <p class="text-xs text-slate-400">Tahminsel Yoğunluk & Kurye Bazlı Vardiya Yönetimi</p>
+                </div>
+            </div>
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-1 mt-2 sm:mt-0 overflow-x-auto pb-1 sm:pb-0">
+                <button onclick="switchTab('daily-entry')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fa-solid fa-calendar-check mr-1.5"></i>Gün Sonu Bölge Girişi</button>
+                <button onclick="switchTab('forecast')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fa-solid fa-chart-pie mr-1.5"></i>Yoğunluk Tahmini</button>
+                <button onclick="switchTab('shifts')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fa-solid fa-clock mr-1.5"></i>Kurye Vardiya Planı</button>
+                <button onclick="switchTab('couriers')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white transition"><i class="fa-solid fa-users mr-1.5"></i>Kurye Performans</button>
+                <button onclick="switchTab('settings')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fa-solid fa-gear mr-1.5"></i>Bölge / Taban Veri</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+
+        <!-- TAB 1: GÜN SONU BÖLGE VERİ GİRİŞİ -->
+        <div id="tab-daily-entry" class="tab-content space-y-6 hidden">
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-6">
+                <div class="flex justify-between items-center flex-wrap gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold">Gün Sonu Bölge Operasyon Raporu Girişi</h2>
+                        <p class="text-xs text-slate-400">Tarih seçerek o güne ait gerçekleşen paket sayısı, ortalama teslimat süresi ve ata iptalleri inceleyin veya güncelleyin.</p>
+                    </div>
+                    <div class="flex items-center space-x-3 flex-wrap gap-2">
+                        <input type="date" id="dailyReportDate" onchange="renderDailyEntry()" class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-bold">
+                        <button onclick="saveDailyRegionReport()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg flex items-center">
+                            <i class="fa-solid fa-floppy-disk mr-2"></i>Raporu Kaydet
+                        </button>
+                        <button onclick="exportDailyReportToExcel()" class="bg-green-700 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg flex items-center">
+                            <i class="fa-solid fa-file-excel mr-2"></i>Excel Olarak İndir
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-700 text-xs uppercase text-slate-300">
+                            <tr>
+                                <th class="p-3">Bölge Adı</th>
+                                <th class="p-3">Günlük Toplam Paket</th>
+                                <th class="p-3">Ort. Teslimat Süresi (dk)</th>
+                                <th class="p-3">Ata İptal Sayısı</th>
+                                <th class="p-3">SLA Durumu (Hedef &le; 35 dk)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyEntryTableBody" class="divide-y divide-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: AKILLI YOĞUNLUK TAHMİNİ & UYARILAR -->
+        <div id="tab-forecast" class="tab-content space-y-6 hidden">
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <div class="flex justify-between items-center flex-wrap gap-4 mb-4">
+                    <div>
+                        <h2 class="text-xl font-bold">Önümüzdeki Günler İçin Akıllı Yoğunluk Tahmini</h2>
+                        <p class="text-xs text-slate-400">Girilen gün sonu verileri ve vardiya planlarına göre çıkan risk analizleri.</p>
+                    </div>
+                    <button onclick="runSmartForecast()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg flex items-center">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Tahminleri Yenile & Analiz Et
+                    </button>
+                </div>
+                <div id="forecastAlertsContainer" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <!-- TAB 3: BÖLGE BAZLI VARDİYA PLANLAMA -->
+        <div id="tab-shifts" class="tab-content space-y-6 hidden">
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-6">
+                <div class="flex justify-between items-center flex-wrap gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold">Bölge Bazlı Haftalık Vardiya Yönetimi</h2>
+                        <p class="text-xs text-slate-400">İlgili bölgeyi seçerek kuryelerin gün gün çalışma saatlerini, OFF ve Ücretsiz İzin durumlarını belirleyin.</p>
+                    </div>
+                    <div class="flex space-x-2 flex-wrap gap-2">
+                        <button onclick="syncFromGoogleSheets()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center shadow-md" title="Kurye İzin Sitesi E-Tablosundan Güncelle">
+                            <i class="fa-solid fa-sync mr-2"></i>E-Tablodan Verileri Çek
+                        </button>
+                        <button onclick="exportShiftsToExcel()" class="bg-green-700 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <i class="fa-solid fa-file-excel mr-2"></i>Vardiya Excel İndir
+                        </button>
+                        <button onclick="openAddShiftModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <i class="fa-solid fa-plus mr-2"></i>Vardiya Girişi Ekle
+                        </button>
+                    </div>
+                </div>
+
+                <div id="shiftRegionTabs" class="flex flex-wrap gap-2 pt-2 border-b border-slate-700 pb-3"></div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-700 text-xs uppercase text-slate-300">
+                            <tr>
+                                <th class="p-3">Kurye Adı</th>
+                                <th class="p-3">Pazartesi</th>
+                                <th class="p-3">Salı</th>
+                                <th class="p-3">Çarşamba</th>
+                                <th class="p-3">Perşembe</th>
+                                <th class="p-3">Cuma</th>
+                                <th class="p-3">Cumartesi</th>
+                                <th class="p-3">Pazar</th>
+                                <th class="p-3 text-right">İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shiftTableBody" class="divide-y divide-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: KURYE PERFORMANS & DÖNEMSEL ANALİZ -->
+        <div id="tab-couriers" class="tab-content space-y-6">
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold">Kurye Performans & Akıllı Saha Koçluğu</h2>
+                    <p class="text-xs text-slate-400">Günlük, Haftalık veya Aylık bazda kurye performanslarını ve AI analizlerini inceleyin.</p>
+                </div>
+                <div class="flex items-center space-x-2 flex-wrap gap-2">
+                    <!-- Google Sheets Senkronizasyon Butonu -->
+                    <button onclick="syncFromGoogleSheets()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center shadow-md">
+                        <i class="fa-solid fa-cloud-arrow-down mr-2"></i>E-Tablodan Verileri Çek
+                    </button>
+                    <!-- Görünüm Modu Seçici (Günlük / Haftalık / Aylık) -->
+                    <select id="reportPeriodMode" onchange="changeReportPeriodMode()" class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white font-bold focus:outline-none focus:border-indigo-500">
+                        <option value="daily">Günlük Görünüm</option>
+                        <option value="weekly">Haftalık Özet</option>
+                        <option value="monthly">Aylık Özet</option>
+                    </select>
+
+                    <!-- Dinamik Tarih / Hafta / Ay Seçici Alanı -->
+                    <div id="periodInputContainer" class="flex items-center bg-slate-700 border border-slate-600 rounded-lg px-2 py-1"></div>
+
+                    <button onclick="exportCouriersToExcel()" class="bg-green-700 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                        <i class="fa-solid fa-file-excel mr-2"></i>Excel İndir
+                    </button>
+                    <button onclick="openAddCourierModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                        <i class="fa-solid fa-user-plus mr-2"></i>Yeni Kurye
+                    </button>
+                    <button onclick="openDailyScoreModal()" class="bg-teal-600 hover:bg-teal-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                        <i class="fa-solid fa-clipboard-check mr-2"></i>Gün Sonu Veri Gir
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-700 text-xs uppercase text-slate-300">
+                            <tr>
+                                <th class="p-3">Kurye Adı</th>
+                                <th class="p-3">Bölgesi</th>
+                                <th class="p-3" id="thPackagesLabel">Toplam Paket</th>
+                                <th class="p-3" id="thAbsenceLabel">Devamsızlık (&lt;15p)</th>
+                                <th class="p-3">Uyumsuzluk (Geç/Erken)</th>
+                                <th class="p-3">Vardiya Uyumu</th>
+                                <th class="p-3 w-1/3">AI Saha Tavsiyesi & Konuşma Konusu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courierTableBody" class="divide-y divide-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: BÖLGE VE TABAN VERİ AYARLARI -->
+        <div id="tab-settings" class="tab-content space-y-6 hidden">
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
+                <h2 class="text-xl font-bold">Bölge Yönetimi</h2>
+                <div class="flex gap-2">
+                    <input type="text" id="newRegionName" placeholder="Yeni Bölge Adı" class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 flex-grow">
+                    <button onclick="addRegion()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Bölge Ekle</button>
+                </div>
+                <div id="settingsRegionList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL: DETAYLI VARDİYA GİRİŞİ -->
+    <div id="addShiftModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-lg">Kurye Günlük Vardiya Tanımla</h3>
+                <button onclick="closeAddShiftModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto flex-grow">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Bölge Seçin</label>
+                    <select id="shiftRegion" onchange="populateCourierDropdown()" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"></select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Kurye Seçin</label>
+                    <select id="shiftCourierSelect" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"></select>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs text-slate-400">Uygulanacak Günler</label>
+                        <button type="button" onclick="selectAllDaysToggle()" class="text-[11px] text-indigo-400 hover:underline">Tümünü Seç / Kaldır</button>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-700/50 p-2.5 rounded-lg border border-slate-600/60" id="daysCheckboxGroup">
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Pazartesi" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Pzt</span></label>
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Salı" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Sal</span></label>
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Çarşamba" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Çar</span></label>
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Perşembe" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Per</span></label>
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Cuma" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Cum</span></label>
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Cumartesi" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Cmt</span></label>
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Pazar" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Paz</span></label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Çalışma / İzin Durumu</label>
+                    <select id="shiftStatusSelect" onchange="handleStatusChange(this.value)" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 font-bold">
+                        <option value="WORK">Normal Vardiyalı Çalışma</option>
+                        <option value="OFF">Haftalık İzin (OFF)</option>
+                        <option value="UNPAID_LEAVE">Ücretsiz İzin</option>
+                    </select>
+                </div>
+                <div id="timeInputsGroup" class="grid grid-cols-2 gap-3 pt-2">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Başlangıç Saati</label>
+                        <input type="time" id="shiftStartTime" value="12:00" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-center text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Bitiş Saati</label>
+                        <input type="time" id="shiftEndTime" value="22:00" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-center text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-700 flex justify-end space-x-3">
+                <button onclick="closeAddShiftModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-sm font-medium rounded-lg">İptal</button>
+                <button onclick="saveShift()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-sm font-medium rounded-lg text-white">Vardiyaları Toplu Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: YENİ KURYE EKLE -->
+    <div id="addCourierModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-lg">Yeni Kurye Ekle</h3>
+                <button onclick="closeAddCourierModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Kurye Ad Soyad</label>
+                    <input type="text" id="newCourierName" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Çalıştığı Bölge</label>
+                    <select id="newCourierRegion" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"></select>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-700 flex justify-end space-x-3">
+                <button onclick="closeAddCourierModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-sm font-medium rounded-lg">İptal</button>
+                <button onclick="saveNewCourier()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-sm font-medium rounded-lg text-white">Kuryeyi Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: GÜN SONU KURYE PERFORMANS GİRİŞİ -->
+    <div id="dailyScoreModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-lg">Gün Sonu Kurye Performans Girişi</h3>
+                    <p class="text-xs text-slate-400"><span id="modalDateDisplay" class="font-bold text-indigo-400"></span> tarihi için paket ve devamsızlık işleyin.</p>
+                </div>
+                <button onclick="closeDailyScoreModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4 flex-grow" id="dailyScoreContainer"></div>
+            <div class="p-4 border-t border-slate-700 flex justify-end space-x-3">
+                <button onclick="closeDailyScoreModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-sm font-medium rounded-lg">İptal</button>
+                <button onclick="saveDailyScores()" class="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-sm font-medium rounded-lg text-white">Verileri İşle & AI Analizi Güncelle</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Mantığı -->
+    <script>
+        // BURAYA KURYELER İZİN SİTENİN GOOGLE APPS SCRIPT WEB APP URL'SİNİ YAPIŞTIRIN
+        const GOOGLE_SHEETS_API_URL = "BURAYA_WEB_APP_URL_YAPIŞTIRILACAK";
+
+        const TARGET_SLA = 35;
+
+        let regions = JSON.parse(localStorage.getItem('saha_regions')) || [
+            "Bakırköy", "Maslak", "Levent", "Beşiktaş", "Sarıyer", "Şişli"
+        ];
+
+        let selectedShiftRegion = regions[0] || "Bakırköy";
+
+        let dailyRegionReports = JSON.parse(localStorage.getItem('saha_dailyRegionReports')) || {};
+
+        let couriers = JSON.parse(localStorage.getItem('saha_couriers')) || [
+            { id: 1, name: "Mehmet Demir", region: "Bakırköy" },
+            { id: 2, name: "Ali Kaya", region: "Bakırköy" },
+            { id: 3, name: "Ahmet Yılmaz", region: "Maslak" },
+        ];
+
+        let dailyCourierReports = JSON.parse(localStorage.getItem('saha_dailyCourierReports')) || {};
+        let weeklyShifts = JSON.parse(localStorage.getItem('saha_weeklyShifts')) || {};
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById('dailyReportDate').value = todayStr;
+
+        changeReportPeriodMode();
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('text-slate-300', 'hover:bg-slate-700');
+            });
+            event.currentTarget.classList.add('bg-indigo-600', 'text-white');
+            event.currentTarget.classList.remove('text-slate-300', 'hover:bg-slate-700');
+
+            if(tabId === 'daily-entry') renderDailyEntry();
+            if(tabId === 'forecast') renderForecast();
+            if(tabId === 'shifts') renderShifts();
+            if(tabId === 'couriers') renderCouriers();
+            if(tabId === 'settings') renderSettings();
+        }
+
+        // --- GOOGLE SHEETS (İZİN PANELİ) ENTEGRASYONU ---
+        async function syncFromGoogleSheets() {
+            if(!GOOGLE_SHEETS_API_URL || GOOGLE_SHEETS_API_URL.includes("BURAYA_WEB_APP_URL")) {
+                alert("Lütfen koda geçerli bir Google Apps Script Web App URL adresi ekleyin!");
+                return;
+            }
+
+            try {
+                const response = await fetch(GOOGLE_SHEETS_API_URL + "?action=getAdminData");
+                const resData = await response.json();
+
+                if(resData.error) {
+                    alert("Veri çekme hatası: " + resData.message);
+                    return;
+                }
+
+                // 1. Kuryeleri Senkronize Et (Kuryeler sekmesi: [Telefon, Ad Soyad, Bölge, Sabit Gün])
+                if(resData.users && resData.users.length > 0) {
+                    resData.users.forEach(u => {
+                        let phone = u[0];
+                        let name = u[1];
+                        let region = u[2] || regions[0];
+                        let fixedDay = u[3]; // Sabit izin günü
+
+                        if(!name) return;
+
+                        let existing = couriers.find(c => c.name.toLowerCase() === String(name).toLowerCase());
+                        if(!existing) {
+                            let newId = Date.now() + Math.floor(Math.random() * 10000);
+                            couriers.push({ id: newId, name: String(name), region: String(region), phone: String(phone) });
+                            existing = couriers[couriers.length - 1];
+                        } else {
+                            existing.region = String(region);
+                            existing.phone = String(phone);
+                        }
+
+                        // Eğer tablodan sabit izin günü tanımlandıysa haftalık vardiyaya OFF olarak işle
+                        if(fixedDay && fixedDay.trim() !== "") {
+                            if(!weeklyShifts[existing.id]) weeklyShifts[existing.id] = {};
+                            weeklyShifts[existing.id][fixedDay.trim()] = "OFF";
+                        }
+                    });
+                }
+
+                // 2. Talepleri Senkronize Et (Talepler sekmesi: [Bölge, Ad Soyad, Telefon, Gün, Tarih])
+                if(resData.submissions && resData.submissions.length > 0) {
+                    resData.submissions.forEach(sub => {
+                        let subName = sub[1];
+                        let subDay = sub[3]; // Onaylanan/talep edilen gün
+
+                        let courierObj = couriers.find(c => c.name.toLowerCase() === String(subName).toLowerCase());
+                        if(courierObj && subDay) {
+                            if(!weeklyShifts[courierObj.id]) weeklyShifts[courierObj.id] = {};
+                            weeklyShifts[courierObj.id][String(subDay).trim()] = "OFF";
+                        }
+                    });
+                }
+
+                localStorage.setItem('saha_couriers', JSON.stringify(couriers));
+                localStorage.setItem('saha_weeklyShifts', JSON.stringify(weeklyShifts));
+
+                renderCouriers();
+                renderShifts();
+                alert("Kuryeler ve izin talepleri Google E-Tablo'dan başarıyla senkronize edildi!");
+
+            } catch(err) {
+                console.error(err);
+                alert("Bağlantı hatası! Lütfen Apps Script URL adresini ve internet bağlantınızı kontrol edin.");
+            }
+        }
+
+        // --- TAB 1: GÜN SONU BÖLGE VERİ GİRİŞİ ---
+        function renderDailyEntry() {
+            const date = document.getElementById('dailyReportDate').value;
+            const currentReport = dailyRegionReports[date] || {};
+            const tbody = document.getElementById('dailyEntryTableBody');
+            tbody.innerHTML = '';
+
+            regions.forEach(reg => {
+                const data = currentReport[reg] || { totalOrders: 0, avgDeliveryTime: 30, ataCancels: 0 };
+                const isSlaOk = Number(data.avgDeliveryTime) <= TARGET_SLA;
+                
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-700/50">
+                        <td class="p-3 font-semibold text-white">${reg}</td>
+                        <td class="p-3">
+                            <input type="number" id="daily_ord_${reg}" value="${data.totalOrders}" class="w-28 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-center font-bold text-indigo-300 focus:outline-none focus:border-indigo-500">
+                        </td>
+                        <td class="p-3">
+                            <input type="number" id="daily_time_${reg}" value="${data.avgDeliveryTime}" onchange="checkSlaBadge('${reg}', this.value)" class="w-24 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-center font-bold text-amber-300 focus:outline-none focus:border-indigo-500">
+                        </td>
+                        <td class="p-3">
+                            <input type="number" id="daily_cancel_${reg}" value="${data.ataCancels}" class="w-24 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-center font-bold text-rose-400 focus:outline-none focus:border-indigo-500">
+                        </td>
+                        <td class="p-3" id="sla_badge_${reg}">
+                            ${isSlaOk ? `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Başarılı (&le; ${TARGET_SLA} dk)</span>` : `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">Aşım Var (> ${TARGET_SLA} dk)</span>`}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function checkSlaBadge(reg, val) {
+            const badgeTd = document.getElementById(`sla_badge_${reg}`);
+            if(Number(val) <= TARGET_SLA) {
+                badgeTd.innerHTML = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Başarılı (&le; ${TARGET_SLA} dk)</span>`;
+            } else {
+                badgeTd.innerHTML = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">Aşım Var (> ${TARGET_SLA} dk)</span>`;
+            }
+        }
+
+        function saveDailyRegionReport() {
+            const date = document.getElementById('dailyReportDate').value;
+            if(!dailyRegionReports[date]) dailyRegionReports[date] = {};
+
+            regions.forEach(reg => {
+                const ord = document.getElementById(`daily_ord_${reg}`).value;
+                const time = document.getElementById(`daily_time_${reg}`).value;
+                const cancel = document.getElementById(`daily_cancel_${reg}`).value;
+
+                dailyRegionReports[date][reg] = {
+                    totalOrders: Number(ord),
+                    avgDeliveryTime: Number(time),
+                    ataCancels: Number(cancel)
+                };
+            });
+
+            localStorage.setItem('saha_dailyRegionReports', JSON.stringify(dailyRegionReports));
+            alert(`${date} tarihli gün sonu bölge raporu başarıyla kaydedildi!`);
+        }
+
+        // --- TAB 3: BÖLGE BAZLI VARDİYA PLANLAMA ---
+        function renderShifts() {
+            const regionTabs = document.getElementById('shiftRegionTabs');
+            regionTabs.innerHTML = '';
+            regions.forEach(reg => {
+                const isActive = reg === selectedShiftRegion;
+                const activeClass = isActive ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-700 text-slate-300 hover:bg-slate-600';
+                regionTabs.innerHTML += `
+                    <button onclick="selectShiftRegion('${reg}')" class="px-3.5 py-1.5 rounded-lg text-sm transition ${activeClass}">
+                        ${reg}
+                    </button>
+                `;
+            });
+
+            const tbody = document.getElementById('shiftTableBody');
+            tbody.innerHTML = '';
+
+            const regionCouriers = couriers.filter(c => c.region === selectedShiftRegion);
+
+            if(regionCouriers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400">${selectedShiftRegion} bölgesine ait kurye bulunamadı. Üstteki <strong class="text-cyan-400">"E-Tablodan Verileri Çek"</strong> butonunu kullanabilirsiniz.</td></tr>`;
+                return;
+            }
+
+            const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+
+            regionCouriers.forEach(c => {
+                const cShifts = weeklyShifts[c.id] || {};
+                let daysHtml = '';
+
+                days.forEach(day => {
+                    const val = cShifts[day] || 'Girilmedi';
+                    if(val === 'OFF') {
+                        daysHtml += `<td class="p-3 font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 text-center rounded-lg">OFF</td>`;
+                    } else if(val === 'Ücretsiz İzin') {
+                        daysHtml += `<td class="p-3 font-bold text-purple-300 bg-purple-500/10 border border-purple-500/20 text-center rounded-lg text-xs">Ücretsiz İzin</td>`;
+                    } else if(val === 'Girilmedi') {
+                        daysHtml += `<td class="p-3 text-slate-500 text-center font-mono text-xs">-</td>`;
+                    } else {
+                        daysHtml += `<td class="p-3 text-emerald-300 font-mono text-xs text-center">${val}</td>`;
+                    }
+                });
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-700/50">
+                        <td class="p-3 font-bold text-white whitespace-nowrap">${c.name}</td>
+                        ${daysHtml}
+                        <td class="p-3 text-right whitespace-nowrap">
+                            <button onclick="openAddShiftModalForCourier(${c.id})" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/20"><i class="fa-solid fa-pen mr-1"></i>Düzenle</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function selectShiftRegion(reg) {
+            selectedShiftRegion = reg;
+            renderShifts();
+        }
+
+        function openAddShiftModal() {
+            populateRegionDropdown();
+            populateCourierDropdown();
+            document.getElementById('addShiftModal').classList.remove('hidden');
+        }
+
+        function openAddShiftModalForCourier(courierId) {
+            const courier = couriers.find(c => c.id === courierId);
+            if(!courier) return;
+            
+            selectedShiftRegion = courier.region;
+            populateRegionDropdown();
+            document.getElementById('shiftRegion').value = courier.region;
+            populateCourierDropdown();
+            document.getElementById('shiftCourierSelect').value = courier.id;
+
+            document.getElementById('addShiftModal').classList.remove('hidden');
+        }
+
+        function populateRegionDropdown() {
+            const regSelect = document.getElementById('shiftRegion');
+            regSelect.innerHTML = '';
+            regions.forEach(r => regSelect.innerHTML += `<option value="${r}">${r}</option>`);
+            regSelect.value = selectedShiftRegion;
+        }
+
+        function populateCourierDropdown() {
+            const reg = document.getElementById('shiftRegion').value;
+            const cSelect = document.getElementById('shiftCourierSelect');
+            cSelect.innerHTML = '';
+            
+            const filtered = couriers.filter(c => c.region === reg);
+            if(filtered.length === 0) {
+                cSelect.innerHTML = `<option value="">Bu bölgede kurye yok</option>`;
+            } else {
+                filtered.forEach(c => cSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`);
+            }
+        }
+
+        function selectAllDaysToggle() {
+            const checkboxes = document.querySelectorAll('.day-check');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => cb.checked = !allChecked);
+        }
+
+        function handleStatusChange(status) {
+            const group = document.getElementById('timeInputsGroup');
+            if(status === 'WORK') {
+                group.classList.remove('opacity-30', 'pointer-events-none');
+            } else {
+                group.classList.add('opacity-30', 'pointer-events-none');
+            }
+        }
+
+        function closeAddShiftModal() {
+            document.getElementById('addShiftModal').classList.add('hidden');
+        }
+
+        function saveShift() {
+            const courierId = document.getElementById('shiftCourierSelect').value;
+            if(!courierId) return alert("Lütfen bir kurye seçin.");
+
+            const selectedDays = Array.from(document.querySelectorAll('.day-check:checked')).map(cb => cb.value);
+            if(selectedDays.length === 0) return alert("Lütfen en az bir gün seçin.");
+
+            const status = document.getElementById('shiftStatusSelect').value;
+            const startTime = document.getElementById('shiftStartTime').value;
+            const endTime = document.getElementById('shiftEndTime').value;
+
+            if(!weeklyShifts[courierId]) weeklyShifts[courierId] = {};
+
+            selectedDays.forEach(day => {
+                if(status === 'OFF') {
+                    weeklyShifts[courierId][day] = "OFF";
+                } else if(status === 'UNPAID_LEAVE') {
+                    weeklyShifts[courierId][day] = "Ücretsiz İzin";
+                } else {
+                    weeklyShifts[courierId][day] = `${startTime} / ${endTime}`;
+                }
+            });
+
+            localStorage.setItem('saha_weeklyShifts', JSON.stringify(weeklyShifts));
+            closeAddShiftModal();
+            renderShifts();
+            alert(`${selectedDays.length} gün için vardiya planı başarıyla kaydedildi.`);
+        }
+
+        // --- TAB 4: KURYE PERFORMANS & DÖNEMSEL ANALİZ ---
+        function changeReportPeriodMode() {
+            const mode = document.getElementById('reportPeriodMode').value;
+            const container = document.getElementById('periodInputContainer');
+            container.innerHTML = '';
+
+            const today = new Date().toISOString().split('T')[0];
+            const currentYearMonth = today.substring(0, 7);
+
+            if(mode === 'daily') {
+                container.innerHTML = `<input type="date" id="reportDateInput" value="${today}" onchange="renderCouriers()" class="bg-transparent text-sm text-white focus:outline-none font-bold cursor-pointer">`;
+                document.getElementById('thPackagesLabel').innerText = "Günün Paketi";
+                document.getElementById('thAbsenceLabel').innerText = "Devamsızlık (<15p)";
+            } else if(mode === 'weekly') {
+                container.innerHTML = `<input type="date" id="reportDateInput" value="${today}" onchange="renderCouriers()" class="bg-transparent text-sm text-white focus:outline-none font-bold cursor-pointer">`;
+                document.getElementById('thPackagesLabel').innerText = "Haftalık Toplam Paket";
+                document.getElementById('thAbsenceLabel').innerText = "Toplam Devamsızlık (Gün)";
+            } else if(mode === 'monthly') {
+                container.innerHTML = `<input type="month" id="reportMonthInput" value="${currentYearMonth}" onchange="renderCouriers()" class="bg-transparent text-sm text-white focus:outline-none font-bold cursor-pointer">`;
+                document.getElementById('thPackagesLabel').innerText = "Aylık Toplam Paket";
+                document.getElementById('thAbsenceLabel').innerText = "Toplam Devamsızlık (Gün)";
+            }
+
+            renderCouriers();
+        }
+
+        function renderCouriers() {
+            const mode = document.getElementById('reportPeriodMode').value;
+            const tbody = document.getElementById('courierTableBody');
+            tbody.innerHTML = '';
+
+            couriers.forEach(c => {
+                let pkg = 0;
+                let absCount = 0;
+                let misCount = 0;
+                let periodLabel = "";
+
+                if(mode === 'daily') {
+                    const dateVal = document.getElementById('reportDateInput')?.value || todayStr;
+                    periodLabel = dateVal;
+                    const dayData = (dailyCourierReports[dateVal] && dailyCourierReports[dateVal][c.id]) ? dailyCourierReports[dateVal][c.id] : null;
+                    if(dayData) {
+                        pkg = dayData.packages || 0;
+                        if(dayData.isAbsence || (pkg > 0 && pkg < 15)) absCount = 1;
+                        if(dayData.isMismatch) misCount = 1;
+                    }
+                } 
+                else if(mode === 'weekly') {
+                    const dateVal = document.getElementById('reportDateInput')?.value || todayStr;
+                    periodLabel = `Haftalık (${dateVal} civarı)`;
+                    const selectedDateObj = new Date(dateVal);
+                    for(let i = 0; i < 7; i++) {
+                        const d = new Date(selectedDateObj);
+                        d.setDate(d.getDate() - i);
+                        const dStr = d.toISOString().split('T')[0];
+                        const dData = (dailyCourierReports[dStr] && dailyCourierReports[dStr][c.id]) ? dailyCourierReports[dStr][c.id] : null;
+                        if(dData) {
+                            pkg += (dData.packages || 0);
+                            if(dData.isAbsence || ((dData.packages || 0) > 0 && (dData.packages || 0) < 15)) absCount++;
+                            if(dData.isMismatch) misCount++;
+                        }
+                    }
+                } 
+                else if(mode === 'monthly') {
+                    const monthVal = document.getElementById('reportMonthInput')?.value || todayStr.substring(0, 7);
+                    periodLabel = `Aylık (${monthVal})`;
+                    Object.keys(dailyCourierReports).forEach(dateStr => {
+                        if(dateStr.startsWith(monthVal)) {
+                            const dData = dailyCourierReports[dateStr][c.id];
+                            if(dData) {
+                                pkg += (dData.packages || 0);
+                                if(dData.isAbsence || ((dData.packages || 0) > 0 && (dData.packages || 0) < 15)) absCount++;
+                                if(dData.isMismatch) misCount++;
+                            }
+                        }
+                    });
+                }
+
+                let compliance = Math.max(0, Math.round(100 - (absCount * 25 + misCount * 15)));
+                const aiAnalysis = generateAiAdviceForPeriod(c, pkg, absCount, misCount, mode, periodLabel);
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-700/50">
+                        <td class="p-3 font-bold text-white whitespace-nowrap">${c.name}</td>
+                        <td class="p-3 text-slate-300 whitespace-nowrap">${c.region}</td>
+                        <td class="p-3 text-indigo-300 font-bold whitespace-nowrap">${pkg} Pak.</td>
+                        <td class="p-3 whitespace-nowrap">
+                            <span class="${absCount > 0 ? 'text-rose-400 font-bold' : 'text-slate-400'}">${absCount} ${mode === 'daily' ? (absCount > 0 ? 'Var' : 'Yok') : 'Gün'}</span>
+                            ${absCount > 0 ? '<div class="text-[10px] text-rose-400/80"><i class="fa-solid fa-scissors mr-1"></i>Bonus Kesildi</div>' : ''}
+                        </td>
+                        <td class="p-3 text-amber-400 whitespace-nowrap">${misCount} Kez</td>
+                        <td class="p-3 font-bold whitespace-nowrap ${compliance < 80 ? 'text-rose-400' : 'text-emerald-400'}">%${compliance}</td>
+                        <td class="p-3">${aiAnalysis}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function generateAiAdviceForPeriod(courier, pkg, absCount, misCount, mode, periodLabel) {
+            let talkTopics = [];
+            let urgencyColor = "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+            let statusTag = "✅ Görüşme Gerekmiyor";
+
+            if (pkg === 0 && absCount === 0 && misCount === 0) {
+                return `
+                    <div class="p-2.5 rounded-lg border border-slate-700 bg-slate-800/60 text-xs text-slate-400">
+                        Bu dönemde kuryeye ait kayıtlı performans verisi bulunmuyor.
+                    </div>
+                `;
+            }
+
+            if (absCount >= (mode === 'monthly' ? 4 : 2) || misCount >= 3) {
+                urgencyColor = "border-rose-500/40 bg-rose-500/10 text-rose-300";
+                statusTag = "🚨 Acil Resmi Görüşme Şart";
+                talkTopics.push(`Seçilen ${periodLabel} döneminde toplam ${absCount} kez 15 paket altı kalmış ve ${misCount} kez uyumsuzluk yaşamıştır.`);
+                talkTopics.push("Düşük paketler nedeniyle uygulanan bonus kesintilerinin toplam bilançosu hatırlatılmalı.");
+                talkTopics.push("Saha performansını kalıcı olarak düzeltmemesi durumunda idari işlem yapılacağı aktarılmalı.");
+            } else if (absCount > 0 || misCount > 0) {
+                urgencyColor = "border-amber-500/40 bg-amber-500/10 text-amber-300";
+                statusTag = "⚡ Dönemsel Koçluk & Uyarı";
+                if(absCount > 0) talkTopics.push(`Bu dönem içinde ${absCount} gün 15 paket sınırının altında kalmıştır.`);
+                if(misCount > 0) talkTopics.push(`Toplam ${misCount} kez vardiya saatlerine uymamıştır.`);
+                talkTopics.push("Genel verimliliği artırmak için birebir kısa değerlendirme yapılmalı.");
+            }
+
+            if (talkTopics.length === 0) {
+                return `
+                    <div class="p-2.5 rounded-lg border ${urgencyColor} text-xs space-y-1">
+                        <div class="font-bold flex items-center justify-between">
+                            <span>${statusTag}</span>
+                            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded">Başarılı Dönem</span>
+                        </div>
+                        <p class="text-[11px] text-slate-300">Kurye bu dönemde toplam ${pkg} paket atarak istikrarlı bir grafik çizmiştir.</p>
+                    </div>
+                `;
+            } else {
+                let topicsList = talkTopics.map(t => `<li class="list-disc list-inside">${t}</li>`).join('');
+                return `
+                    <div class="p-2.5 rounded-lg border ${urgencyColor} text-xs space-y-1.5">
+                        <div class="font-bold flex items-center justify-between">
+                            <span>${statusTag}</span>
+                            <span class="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-300">${periodLabel}</span>
+                        </div>
+                        <div class="text-[11px]">
+                            <span class="font-semibold text-slate-200">Görüşmede Açılacak Konular:</span>
+                            <ul class="mt-1 space-y-0.5 text-slate-300">
+                                ${topicsList}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function openAddCourierModal() {
+            const select = document.getElementById('newCourierRegion');
+            select.innerHTML = '';
+            regions.forEach(reg => select.innerHTML += `<option value="${reg}">${reg}</option>`);
+            document.getElementById('addCourierModal').classList.remove('hidden');
+        }
+        function closeAddCourierModal() { document.getElementById('addCourierModal').classList.add('hidden'); }
+        function saveNewCourier() {
+            const name = document.getElementById('newCourierName').value;
+            const region = document.getElementById('newCourierRegion').value;
+            if(!name) return alert("Lütfen kurye adı girin.");
+            couriers.push({ id: Date.now(), name, region });
+            localStorage.setItem('saha_couriers', JSON.stringify(couriers));
+            closeAddCourierModal();
+            renderCouriers();
+            renderShifts();
+        }
+
+        function openDailyScoreModal() {
+            const selectedDate = document.getElementById('reportDateInput')?.value || todayStr;
+            document.getElementById('modalDateDisplay').innerText = selectedDate;
+
+            const dateReport = dailyCourierReports[selectedDate] || {};
+            const container = document.getElementById('dailyScoreContainer');
+            container.innerHTML = '';
+
+            couriers.forEach(c => {
+                const cData = dateReport[c.id] || { packages: 0, isAbsence: false, isMismatch: false };
+
+                container.innerHTML += `
+                    <div class="bg-slate-700/40 p-3.5 rounded-xl border border-slate-700 space-y-3">
+                        <div class="flex justify-between items-center font-bold text-white">
+                            <span>${c.name} <span class="text-xs text-indigo-300">(${c.region})</span></span>
+                            <span class="text-xs font-normal text-slate-400">Tarih: ${selectedDate}</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            <div>
+                                <label class="block text-slate-400 mb-1">O Gün Attığı Paket</label>
+                                <input type="number" id="score_pkg_${c.id}" value="${cData.packages || 0}" class="w-full bg-slate-700 border border-slate-600 rounded px-2.5 py-1.5 text-center font-bold text-indigo-300 focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div class="flex items-center space-x-2 pt-4">
+                                <input type="checkbox" id="score_mis_${c.id}" ${cData.isMismatch ? 'checked' : ''} class="w-4 h-4 rounded text-amber-500 bg-slate-700 border-slate-600">
+                                <label for="score_mis_${c.id}" class="text-slate-300">Vardiyaya Geç Giriş / Erken Çıkış (Uyumsuzluk)</label>
+                            </div>
+                            <div class="flex items-center space-x-2 pt-4">
+                                <input type="checkbox" id="score_abs_${c.id}" ${cData.isAbsence ? 'checked' : ''} class="w-4 h-4 rounded text-rose-500 bg-slate-700 border-slate-600">
+                                <label for="score_abs_${c.id}" class="text-slate-300">&lt;15 Paket Baraj Altı (Devamsız / Bonus Kes)</label>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('dailyScoreModal').classList.remove('hidden');
+        }
+
+        function closeDailyScoreModal() { document.getElementById('dailyScoreModal').classList.add('hidden'); }
+
+        function saveDailyScores() {
+            const selectedDate = document.getElementById('reportDateInput')?.value || todayStr;
+            if(!dailyCourierReports[selectedDate]) dailyCourierReports[selectedDate] = {};
+
+            couriers.forEach(c => {
+                const pkg = Number(document.getElementById(`score_pkg_${c.id}`).value) || 0;
+                const isMis = document.getElementById(`score_mis_${c.id}`).checked;
+                const isAbs = document.getElementById(`score_abs_${c.id}`).checked;
+
+                dailyCourierReports[selectedDate][c.id] = {
+                    packages: pkg,
+                    isMismatch: isMis,
+                    isAbsence: isAbs || (pkg > 0 && pkg < 15)
+                };
+            });
+
+            localStorage.setItem('saha_dailyCourierReports', JSON.stringify(dailyCourierReports));
+            closeDailyScoreModal();
+            renderCouriers();
+            alert(`${selectedDate} tarihli kurye performansları başarıyla kaydedildi!`);
+        }
+
+        // --- EXCEL İNDİRME FONKSİYONLARI ---
+        function exportDailyReportToExcel() {
+            const date = document.getElementById('dailyReportDate').value;
+            const currentReport = dailyRegionReports[date] || {};
+            
+            const excelData = regions.map(reg => {
+                const data = currentReport[reg] || { totalOrders: 0, avgDeliveryTime: 0, ataCancels: 0 };
+                return {
+                    "Tarih": date,
+                    "Bölge Adı": reg,
+                    "Günlük Toplam Paket": data.totalOrders,
+                    "Ort. Teslimat Süresi (dk)": data.avgDeliveryTime,
+                    "Ata İptal Sayısı": data.ataCancels,
+                    [`SLA Durumu (${TARGET_SLA}dk)`]: data.avgDeliveryTime <= TARGET_SLA ? "Başarılı" : "Aşım Var"
+                };
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Bölge Raporu");
+            XLSX.writeFile(workbook, `Saha_Bolge_Raporu_${date}.xlsx`);
+        }
+
+        function exportCouriersToExcel() {
+            const mode = document.getElementById('reportPeriodMode').value;
+            const excelData = couriers.map(c => {
+                return {
+                    "Kurye Ad Soyad": c.name,
+                    "Bölgesi": c.region,
+                    "Rapor Modu": mode.toUpperCase()
+                };
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Kurye Performans");
+            XLSX.writeFile(workbook, `Kurye_Performans_Raporu_${mode}.xlsx`);
+        }
+
+        function exportShiftsToExcel() {
+            const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+            const excelData = couriers.map(c => {
+                const cShifts = weeklyShifts[c.id] || {};
+                let row = { "Kurye Adı": c.name, "Bölge": c.region };
+                days.forEach(d => row[d] = cShifts[d] || "-");
+                return row;
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Haftalık Vardiyalar");
+            XLSX.writeFile(workbook, `Haftalik_Vardiya_Plani_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        function runSmartForecast() { renderForecast(); }
+
+        function renderForecast() {
+            const container = document.getElementById('forecastAlertsContainer');
+            container.innerHTML = '';
+
+            regions.forEach(reg => {
+                const regCouriers = couriers.filter(c => c.region === reg);
+                const courierCount = regCouriers.length;
+                
+                let riskLevel = "normal";
+                let alertTitle = `${reg} Bölgesi - Operasyon Dengeli`;
+                let alertDesc = `Bölgede tanımlı ${courierCount} kurye mevcut. Tahmini vardiyalarla sipariş yükü karşılanabilir.`;
+                let badgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+
+                if (courierCount === 0) {
+                    riskLevel = "high";
+                    alertTitle = `⚠️ ${reg} Bölgesi - Kurye Tanımlanmamış!`;
+                    alertDesc = `Bu bölge için tanımlı kurye bulunmuyor. Sipariş akışında büyük aksama ve Ata İptal riski yüksek.`;
+                    badgeClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+                } else if (courierCount < 2) {
+                    riskLevel = "medium";
+                    alertTitle = `⚡ ${reg} Bölgesi - Yoğun Saat / SLA Riski`;
+                    alertDesc = `Tanımlı kurye sayısı (${courierCount}) akşam zirve saatlerinde ${TARGET_SLA} dk teslimat süresi hedefini aşabilir.`;
+                    badgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                }
+
+                container.innerHTML += `
+                    <div class="bg-slate-700/40 p-4 rounded-xl border border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <h3 class="font-bold text-base text-white">${alertTitle}</h3>
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badgeClass}">${riskLevel.toUpperCase()}</span>
+                            </div>
+                            <p class="text-xs text-slate-300">${alertDesc}</p>
+                        </div>
+                        <div class="text-xs bg-slate-800 px-3 py-2 rounded-lg border border-slate-600 text-slate-300 whitespace-nowrap">
+                            Kayıtlı Kurye: <span class="font-bold text-indigo-400">${courierCount} Kişi</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderSettings() {
+            const list = document.getElementById('settingsRegionList');
+            list.innerHTML = '';
+            regions.forEach((reg, index) => {
+                list.innerHTML += `
+                    <div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600 flex justify-between items-center text-sm">
+                        <span>${reg}</span>
+                        <button onclick="removeRegion(${index})" class="text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+            });
+        }
+        function addRegion() {
+            const name = document.getElementById('newRegionName').value.trim();
+            if(!name) return;
+            if(regions.includes(name)) return alert("Bu bölge zaten var.");
+            regions.push(name);
+            localStorage.setItem('saha_regions', JSON.stringify(regions));
+            document.getElementById('newNameName']?.value;
+            renderSettings();
+            renderShifts();
+        }
+        function removeRegion(index) {
+            if(regions.length <= 1) return alert("En az 1 bölge kalmalıdır.");
+            regions.splice(index, 1);
+            localStorage.setItem('saha_regions', JSON.stringify(regions));
+            renderSettings();
+            renderShifts();
+        }
+
+        renderCouriers();
+    </script>
+</body>
+</html>
