@@ -89,10 +89,8 @@
                     </button>
                 </div>
 
-                <!-- ÖZET KARTLARI -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="assistantSummaryCards"></div>
 
-                <!-- DETAYLI AKSİYON VE DİKKAT MADDELERİ -->
                 <div class="space-y-4">
                     <h3 class="text-lg font-bold text-slate-200 border-b border-slate-700 pb-2 flex items-center gap-2">
                         <i class="fa-solid fa-list-check text-indigo-400"></i> Öncelikli Saha Görevleri
@@ -102,16 +100,31 @@
             </div>
         </div>
 
-        <!-- TAB 3: BÖLGE BAZLI VARDİYA PLANLAMA -->
+        <!-- TAB 3: BÖLGE BAZLI VARDİYA PLANLAMA (HAFTALIK GEZİNMELİ) -->
         <div id="tab-shifts" class="tab-content space-y-6 hidden">
             <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-6">
-                <div class="flex justify-between items-center flex-wrap gap-4">
+                <div class="flex justify-between items-center flex-wrap gap-4 border-b border-slate-700 pb-4">
                     <div>
                         <h2 class="text-xl font-bold">Bölge Bazlı Haftalık Vardiya Yönetimi</h2>
-                        <p class="text-xs text-slate-400">İlgili bölgeyi seçerek kuryelerin gün gün çalışma saatlerini, OFF ve Ücretsiz İzin durumlarını belirleyin.</p>
+                        <p class="text-xs text-slate-400">Hafta seçerek geçmiş veya gelecek haftanın izin ve vardiya planlarını görüntüleyin.</p>
                     </div>
+
+                    <!-- HAFTALIK NAVİGASYON KONTROLLERİ (YENİ EKLENDİ) -->
+                    <div class="flex items-center space-x-2 bg-slate-700/60 p-1.5 rounded-xl border border-slate-600">
+                        <button onclick="navigateShiftWeek(-1)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-600 text-slate-200 text-xs font-bold rounded-lg transition flex items-center">
+                            <i class="fa-solid fa-chevron-left mr-1"></i>Önceki Hafta
+                        </button>
+                        <span id="currentShiftWeekLabel" class="text-xs font-black px-3 text-indigo-300 font-mono"></span>
+                        <button onclick="navigateShiftWeek(0)" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition" title="Bu Haftaya Dön">
+                            Bu Hafta
+                        </button>
+                        <button onclick="navigateShiftWeek(1)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-600 text-slate-200 text-xs font-bold rounded-lg transition flex items-center">
+                            Sonraki Hafta<i class="fa-solid fa-chevron-right ml-1"></i>
+                        </button>
+                    </div>
+
                     <div class="flex space-x-2 flex-wrap gap-2">
-                        <button onclick="syncFromGoogleSheets()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center shadow-md" title="Kurye İzin Sitesi E-Tablosundan Güncelle">
+                        <button onclick="syncFromGoogleSheets()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center shadow-md">
                             <i class="fa-solid fa-sync mr-2"></i>E-Tablodan Verileri Çek
                         </button>
                         <button onclick="exportShiftsToExcel()" class="bg-green-700 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center">
@@ -130,13 +143,13 @@
                         <thead class="bg-slate-700 text-xs uppercase text-slate-300">
                             <tr>
                                 <th class="p-3">Kurye Adı</th>
-                                <th class="p-3">Pazartesi</th>
-                                <th class="p-3">Salı</th>
-                                <th class="p-3">Çarşamba</th>
-                                <th class="p-3">Perşembe</th>
-                                <th class="p-3">Cuma</th>
-                                <th class="p-3">Cumartesi</th>
-                                <th class="p-3">Pazar</th>
+                                <th class="p-3 text-center">Pazartesi</th>
+                                <th class="p-3 text-center">Salı</th>
+                                <th class="p-3 text-center">Çarşamba</th>
+                                <th class="p-3 text-center">Perşembe</th>
+                                <th class="p-3 text-center">Cuma</th>
+                                <th class="p-3 text-center">Cumartesi</th>
+                                <th class="p-3 text-center">Pazar</th>
                                 <th class="p-3 text-right">İşlem</th>
                             </tr>
                         </thead>
@@ -177,7 +190,6 @@
                 </div>
             </div>
 
-            <!-- FİLTRELEME ÇUBUĞU (BÖLGE & İSİM) -->
             <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-wrap gap-4 items-center justify-between">
                 <div class="flex items-center space-x-3 flex-wrap gap-3 flex-grow">
                     <div class="flex items-center space-x-2">
@@ -219,7 +231,6 @@
         <div id="tab-agenda" class="tab-content space-y-6 hidden">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
-                <!-- SOL KOLON: AJANDA & ETKİNLİK PLANLAYICI -->
                 <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
                     <div class="flex justify-between items-center flex-wrap gap-2 border-b border-slate-700 pb-3">
                         <div>
@@ -236,7 +247,6 @@
                     <div id="agendaListContainer" class="space-y-3 max-h-[600px] overflow-y-auto pr-1"></div>
                 </div>
 
-                <!-- SAĞ KOLON: AKILLI NOT DEFTERİ -->
                 <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
                     <div class="flex justify-between items-center flex-wrap gap-2 border-b border-slate-700 pb-3">
                         <div>
@@ -270,7 +280,7 @@
 
     </main>
 
-    <!-- MODAL: TEK KURYE VERİ GİRİŞİ -->
+    <!-- MODALLAR -->
     <div id="singleCourierModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
             <div class="p-4 border-b border-slate-700 flex justify-between items-center">
@@ -307,7 +317,6 @@
         </div>
     </div>
 
-    <!-- MODAL: YENİ AJANDA ETKİNLİĞİ EKLE -->
     <div id="addAgendaModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
             <div class="p-4 border-b border-slate-700 flex justify-between items-center">
@@ -335,7 +344,6 @@
         </div>
     </div>
 
-    <!-- MODAL: YENİ NOT EKLE -->
     <div id="addNoteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
             <div class="p-4 border-b border-slate-700 flex justify-between items-center">
@@ -367,7 +375,6 @@
         </div>
     </div>
 
-    <!-- MODAL: DETAYLI VARDİYA GİRİŞİ -->
     <div id="addShiftModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
             <div class="p-4 border-b border-slate-700 flex justify-between items-center">
@@ -425,7 +432,6 @@
         </div>
     </div>
 
-    <!-- MODAL: YENİ KURYE EKLE -->
     <div id="addCourierModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
             <div class="p-4 border-b border-slate-700 flex justify-between items-center">
@@ -449,7 +455,6 @@
         </div>
     </div>
 
-    <!-- MODAL: TOPLU GÜN SONU KURYE PERFORMANS GİRİŞİ -->
     <div id="dailyScoreModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
             <div class="p-4 border-b border-slate-700 flex justify-between items-center">
@@ -469,9 +474,7 @@
 
     <!-- JavaScript Mantığı -->
     <script>
-        // BURAYA GOOGLE APPS SCRIPT WEB APP URL'NİZİ YAPIŞTIRIN
         const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzX2IlQj6B2J6J7G4utp0Bg49uZKluX11vSl3L8VwS3b2yysm5D0pzujgaDaDql4BFPog/exec";
-
         const TARGET_SLA = 35;
 
         let regions = JSON.parse(localStorage.getItem('saha_regions')) || [
@@ -489,32 +492,58 @@
         ];
 
         let dailyCourierReports = JSON.parse(localStorage.getItem('saha_dailyCourierReports')) || {};
-        let weeklyShifts = JSON.parse(localStorage.getItem('saha_weeklyShifts')) || {};
+        
+        // HAFTALIK VARDİYA DEPOSU (Hafta Kodları Bazında Tutulur: { "2026-W43": { courierId: { Pazartesi: "12:00 / 22:00" } } })
+        let weeklyShiftsByWeek = JSON.parse(localStorage.getItem('saha_weeklyShiftsByWeek')) || {};
 
-        // AJANDA VE NOT VERİ DEPOLARI
         let agendaItems = JSON.parse(localStorage.getItem('saha_agendaItems')) || [];
         let noteItems = JSON.parse(localStorage.getItem('saha_noteItems')) || [];
 
         const todayStr = new Date().toISOString().split('T')[0];
         document.getElementById('dailyReportDate').value = todayStr;
 
-        // Tarihten Türk gün ismini bulur (Pazartesi, Salı, ...)
+        // Seçilen hafta offset'i (0 = Bu Hafta, -1 = Geçen Hafta, 1 = Gelecek Hafta)
+        let currentShiftWeekOffset = 0;
+
+        function getWeekCodeByOffset(offset = 0) {
+            var d = new Date();
+            d.setDate(d.getDate() + (offset * 7));
+            var year = d.getFullYear();
+            var onejan = new Date(year, 0, 1);
+            var week = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+            return year + "-W" + (week < 10 ? "0" + week : week);
+        }
+
+        function getActiveWeekCode() {
+            return getWeekCodeByOffset(currentShiftWeekOffset);
+        }
+
+        function navigateShiftWeek(dir) {
+            if (dir === 0) currentShiftWeekOffset = 0;
+            else currentShiftWeekOffset += dir;
+            renderShifts();
+        }
+
         function getDayNameFromDateStr(dateStr) {
             const days = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
             const d = new Date(dateStr);
             return days[d.getDay()];
         }
 
-        // Kuryenin belirtilen tarihte "YAZILI VARDİYESİ" var mı kontrol eder
         function isCourierScheduledToWork(courierId, dateStr) {
             const dayName = getDayNameFromDateStr(dateStr);
-            const cShifts = weeklyShifts[courierId] || {};
+            // Tarihin hangi haftaya ait olduğunu hesaplayıp ilgili haftadan çekeriz
+            const dateObj = new Date(dateStr);
+            const onejan = new Date(dateObj.getFullYear(), 0, 1);
+            const weekNum = Math.ceil((((dateObj - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+            const wCode = dateObj.getFullYear() + "-W" + (weekNum < 10 ? "0" + weekNum : weekNum);
+
+            const weekShifts = weeklyShiftsByWeek[wCode] || {};
+            const cShifts = weekShifts[courierId] || {};
             const shiftVal = cShifts[dayName];
 
             if (!shiftVal) return false;
             if (shiftVal === 'OFF' || shiftVal === 'Ücretsiz İzin' || shiftVal === 'Girilmedi') return false;
-            
-            // Eğer "12:00 / 22:00" gibi saat formatı varsa çalışıyor demektir
             return true;
         }
 
@@ -567,7 +596,6 @@
                         let phone = u[0];
                         let name = u[1];
                         let region = u[2] || regions[0];
-                        let fixedDay = u[3];
 
                         if(!name) return;
 
@@ -575,43 +603,43 @@
                         if(!existing) {
                             let newId = Date.now() + Math.floor(Math.random() * 10000);
                             couriers.push({ id: newId, name: String(name), region: String(region), phone: String(phone) });
-                            existing = couriers[couriers.length - 1];
                         } else {
                             existing.region = String(region);
                             existing.phone = String(phone);
                         }
-
-                        if(fixedDay && fixedDay.trim() !== "") {
-                            if(!weeklyShifts[existing.id]) weeklyShifts[existing.id] = {};
-                            const allDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
-                            allDays.forEach(d => { if(weeklyShifts[existing.id][d] === 'OFF') delete weeklyShifts[existing.id][d]; });
-                            weeklyShifts[existing.id][fixedDay.trim()] = "OFF";
-                        }
                     });
                 }
 
+                // E-Tablo'daki tüm izin taleplerini hafta hafta eşleştirir (Geçmiş ve Gelecek)
                 if(resData.submissions && resData.submissions.length > 0) {
                     resData.submissions.forEach(sub => {
+                        let subWeek = sub[0]; // Örn: 2026-W43
                         let subName = sub[1];
-                        let subDay = sub[3];
+                        let subDay = sub[2];
 
                         let courierObj = couriers.find(c => c.name.toLowerCase() === String(subName).toLowerCase());
-                        if(courierObj && subDay) {
-                            if(!weeklyShifts[courierObj.id]) weeklyShifts[courierObj.id] = {};
+                        if(courierObj && subDay && subWeek) {
+                            if(!weeklyShiftsByWeek[subWeek]) weeklyShiftsByWeek[subWeek] = {};
+                            if(!weeklyShiftsByWeek[subWeek][courierObj.id]) weeklyShiftsByWeek[subWeek][courierObj.id] = {};
+                            
                             const allDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
-                            allDays.forEach(d => { if(weeklyShifts[courierObj.id][d] === 'OFF') delete weeklyShifts[courierObj.id][d]; });
-                            weeklyShifts[courierObj.id][String(subDay).trim()] = "OFF";
+                            allDays.forEach(d => { 
+                                if(weeklyShiftsByWeek[subWeek][courierObj.id][d] === 'OFF') {
+                                    delete weeklyShiftsByWeek[subWeek][courierObj.id][d]; 
+                                }
+                            });
+                            weeklyShiftsByWeek[subWeek][courierObj.id][String(subDay).trim()] = "OFF";
                         }
                     });
                 }
 
                 localStorage.setItem('saha_couriers', JSON.stringify(couriers));
-                localStorage.setItem('saha_weeklyShifts', JSON.stringify(weeklyShifts));
+                localStorage.setItem('saha_weeklyShiftsByWeek', JSON.stringify(weeklyShiftsByWeek));
 
                 populateFilterRegionDropdown();
                 renderCouriers();
                 renderShifts();
-                alert("Kuryeler ve izin talepleri Google E-Tablo'dan başarıyla senkronize edildi!");
+                alert("Kuryeler ve geçmiş/güncel tüm izin talepleri Google E-Tablo'dan başarıyla senkronize edildi!");
 
             } catch(err) {
                 console.error(err);
@@ -765,7 +793,6 @@
                 Object.keys(dailyCourierReports).forEach(dStr => {
                     const cRep = dailyCourierReports[dStr][c.id];
                     const isWorkDay = isCourierScheduledToWork(c.id, dStr);
-                    // Sadece yazılı vardiyasında devamsızlık yazılmışsa say
                     if(cRep && isWorkDay && (cRep.isAbsence || cRep.isMismatch)) recentAbsences++;
                 });
 
@@ -792,8 +819,15 @@
             });
         }
 
-        // --- TAB 3: BÖLGE BAZLI VARDİYA PLANLAMA ---
+        // --- TAB 3: BÖLGE BAZLI VARDİYA PLANLAMA (HAFTALIK GEZİNMELİ) ---
         function renderShifts() {
+            const activeWeekCode = getActiveWeekCode();
+            const labelEl = document.getElementById('currentShiftWeekLabel');
+            if(labelEl) {
+                let statusText = currentShiftWeekOffset === 0 ? " (Bu Hafta)" : (currentShiftWeekOffset > 0 ? ` (+${currentShiftWeekOffset}. Hafta)` : ` (${currentShiftWeekOffset}. Hafta)`);
+                labelEl.innerText = activeWeekCode + statusText;
+            }
+
             const regionTabs = document.getElementById('shiftRegionTabs');
             regionTabs.innerHTML = '';
             regions.forEach(reg => {
@@ -817,9 +851,10 @@
             }
 
             const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+            const currentWeekShifts = weeklyShiftsByWeek[activeWeekCode] || {};
 
             regionCouriers.forEach(c => {
-                const cShifts = weeklyShifts[c.id] || {};
+                const cShifts = currentWeekShifts[c.id] || {};
                 let daysHtml = '';
 
                 days.forEach(day => {
@@ -949,38 +984,41 @@
             const startTime = document.getElementById('shiftStartTime').value;
             const endTime = document.getElementById('shiftEndTime').value;
 
-            if(!weeklyShifts[courierId]) weeklyShifts[courierId] = {};
+            const activeWeekCode = getActiveWeekCode();
+
+            if(!weeklyShiftsByWeek[activeWeekCode]) weeklyShiftsByWeek[activeWeekCode] = {};
+            if(!weeklyShiftsByWeek[activeWeekCode][courierId]) weeklyShiftsByWeek[activeWeekCode][courierId] = {};
 
             const allDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 
             if(status === 'OFF') {
                 if(selectedDays.length > 1) {
                     return alert("Haftalık İzin (OFF) için sadece 1 gün seçebilirsiniz!");
-                }
+                } grains
                 
                 allDays.forEach(day => {
-                    if(weeklyShifts[courierId][day] === 'OFF') {
-                        delete weeklyShifts[courierId][day];
+                    if(weeklyShiftsByWeek[activeWeekCode][courierId][day] === 'OFF') {
+                        delete weeklyShiftsByWeek[activeWeekCode][courierId][day];
                     }
                 });
 
                 const targetDay = selectedDays[0];
-                weeklyShifts[courierId][targetDay] = "OFF";
+                weeklyShiftsByWeek[activeWeekCode][courierId][targetDay] = "OFF";
 
             } else {
                 selectedDays.forEach(day => {
                     if(status === 'UNPAID_LEAVE') {
-                        weeklyShifts[courierId][day] = "Ücretsiz İzin";
+                        weeklyShiftsByWeek[activeWeekCode][courierId][day] = "Ücretsiz İzin";
                     } else {
-                        weeklyShifts[courierId][day] = `${startTime} / ${endTime}`;
+                        weeklyShiftsByWeek[activeWeekCode][courierId][day] = `${startTime} / ${endTime}`;
                     }
                 });
             }
 
-            localStorage.setItem('saha_weeklyShifts', JSON.stringify(weeklyShifts));
+            localStorage.setItem('saha_weeklyShiftsByWeek', JSON.stringify(weeklyShiftsByWeek));
             closeAddShiftModal();
             renderShifts();
-            alert(`Kurye vardiya/izin durumu başarıyla güncellendi!`);
+            alert(`${activeWeekCode} haftası için kurye vardiya/izin durumu kaydedildi!`);
         }
 
         // --- TAB 4: KURYE PERFORMANS & DÖNEMSEL ANALİZ ---
@@ -1044,7 +1082,7 @@
                 let pkg = 0;
                 let absCount = 0;
                 let misCount = 0;
-                let offDayWorks = 0; // İzin gününde ekstra atılan paket gün sayısı
+                let offDayWorks = 0;
                 let periodLabel = "";
 
                 if(mode === 'daily') {
@@ -1058,7 +1096,7 @@
                         if(isWorkDay) {
                             if(dayData.isAbsence || (pkg < 15)) absCount = 1;
                         } else {
-                            if(pkg > 0) offDayWorks = 1; // İzin gününde gelmiş, devamsızlık YAZILMAZ
+                            if(pkg > 0) offDayWorks = 1;
                         }
                         if(dayData.isMismatch && isWorkDay) misCount = 1;
                     }
@@ -1141,7 +1179,6 @@
             });
         }
 
-        // TEK KURYE VERİ GİRİŞİ MODALI MANTIĞI
         function openSingleCourierModal(courierId) {
             const courier = couriers.find(c => c.id === courierId);
             if(!courier) return;
@@ -1178,7 +1215,6 @@
             const isMis = document.getElementById('singleCourierModalMis').checked;
             const isAbs = document.getElementById('singleCourierModalAbs').checked;
 
-            // Devamsızlık kuralı: Yalnızca yazılı vardiya gününde 15 paketin altındaysa devamsızlık geçerli olur
             const finalAbsence = isWorkDay ? (isAbs || pkg < 15) : false;
 
             dailyCourierReports[selectedDate][courierId] = {
@@ -1208,11 +1244,8 @@
                 }
 
                 couriers = couriers.filter(c => c.id !== id);
-                delete weeklyShifts[id];
                 
                 localStorage.setItem('saha_couriers', JSON.stringify(couriers));
-                localStorage.setItem('saha_weeklyShifts', JSON.stringify(weeklyShifts));
-                
                 renderCouriers();
                 renderShifts();
                 alert("Kurye başarıyla silindi.");
@@ -1555,10 +1588,13 @@
         }
 
         function exportShiftsToExcel() {
+            const activeWeekCode = getActiveWeekCode();
             const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+            const currentWeekShifts = weeklyShiftsByWeek[activeWeekCode] || {};
+
             const excelData = couriers.map(c => {
-                const cShifts = weeklyShifts[c.id] || {};
-                let row = { "Kurye Adı": c.name, "Bölge": c.region };
+                const cShifts = currentWeekShifts[c.id] || {};
+                let row = { "Kurye Adı": c.name, "Bölge": c.region, "Hafta": activeWeekCode };
                 days.forEach(d => row[d] = cShifts[d] || "-");
                 return row;
             });
@@ -1566,7 +1602,7 @@
             const worksheet = XLSX.utils.json_to_sheet(excelData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Haftalık Vardiyalar");
-            XLSX.writeFile(workbook, `Haftalik_Vardiya_Plani_${new Date().toISOString().split('T')[0]}.xlsx`);
+            XLSX.writeFile(workbook, `Vardiya_Plani_${activeWeekCode}.xlsx`);
         }
 
         function renderSettings() {
