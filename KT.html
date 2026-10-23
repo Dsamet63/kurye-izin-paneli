@@ -687,7 +687,6 @@
             const tbody = document.getElementById('courierTableBody');
             tbody.innerHTML = '';
 
-            // Filtreleme (Bölge ve İsim)
             let filteredCouriers = couriers.filter(c => {
                 const matchRegion = (filterRegion === 'ALL' || c.region === filterRegion);
                 const matchName = c.name.toLowerCase().includes(searchQuery);
@@ -773,11 +772,23 @@
             });
         }
 
-        function deleteCourier(id) {
+        async function deleteCourier(id) {
             const courier = couriers.find(c => c.id === id);
             if(!courier) return;
             
-            if(confirm(`"${courier.name}" adlı kuryeyi veritabanından silmek istediğinize emin misiniz?`)) {
+            if(confirm(`"${courier.name}" adlı kuryeyi hem bu panelden hem de Google E-Tablo'dan kalıcı olarak silmek istediğinize emin misiniz?`)) {
+                
+                // Eğer Google Apps Script URL tanımlıysa e-tablodan da silme isteği atalım
+                if(GOOGLE_SHEETS_API_URL && !GOOGLE_SHEETS_API_URL.includes("BURAYA_WEB_APP_URL")) {
+                    try {
+                        const deleteUrl = `${GOOGLE_SHEETS_API_URL}?action=deleteCourier&phone=${encodeURIComponent(courier.phone || '')}&name=${encodeURIComponent(courier.name)}`;
+                        await fetch(deleteUrl);
+                    } catch(err) {
+                        console.error("E-Tablodan silinirken hata oluştu:", err);
+                    }
+                }
+
+                // Yerel listeden kaldır
                 couriers = couriers.filter(c => c.id !== id);
                 delete weeklyShifts[id];
                 
@@ -1005,7 +1016,7 @@
                 } else if (courierCount < 2) {
                     riskLevel = "medium";
                     alertTitle = `⚡ ${reg} Bölgesi - Yoğun Saat / SLA Riski`;
-                    alertDesc = `Tanımlı kurye sayısı (${courierCount}) akşam zirve saatlerinde ${TARGET_SLA} dk teslimat süresi hedefini aşabilir.`;
+                    alertDesc = `Tanımli kurye sayısı (${courierCount}) akşam zirve saatlerinde ${TARGET_SLA} dk teslimat süresi hedefini aşabilir.`;
                     badgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
                 }
 
