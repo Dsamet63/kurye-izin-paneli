@@ -26,7 +26,7 @@
             <!-- Navigation Tabs -->
             <nav class="flex space-x-1 mt-2 sm:mt-0 overflow-x-auto pb-1 sm:pb-0">
                 <button onclick="switchTab('daily-entry')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fa-solid fa-calendar-check mr-1.5"></i>Gün Sonu Bölge Girişi</button>
-                <button onclick="switchTab('forecast')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fa-solid fa-chart-pie mr-1.5"></i>Yoğunluk Tahmini</button>
+                <button onclick="switchTab('forecast')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fa-solid fa-chart-pie mr-1.5"></i>Bugünün Saha Asistanı</button>
                 <button onclick="switchTab('shifts')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fa-solid fa-clock mr-1.5"></i>Kurye Vardiya Planı</button>
                 <button onclick="switchTab('couriers')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white transition"><i class="fa-solid fa-users mr-1.5"></i>Kurye Performans</button>
                 <button onclick="switchTab('settings')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fa-solid fa-gear mr-1.5"></i>Bölge / Taban Veri</button>
@@ -73,19 +73,31 @@
             </div>
         </div>
 
-        <!-- TAB 2: AKILLI YOĞUNLUK TAHMİNİ & UYARILAR -->
+        <!-- TAB 2: GEÇMİŞ VERİYE DAYALI BUGÜNÜN SAHA ASİSTANI -->
         <div id="tab-forecast" class="tab-content space-y-6 hidden">
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-                <div class="flex justify-between items-center flex-wrap gap-4 mb-4">
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-6">
+                <div class="flex justify-between items-center flex-wrap gap-4">
                     <div>
-                        <h2 class="text-xl font-bold">Önümüzdeki Günler İçin Akıllı Yoğunluk Tahmini</h2>
-                        <p class="text-xs text-slate-400">Girilen gün sonu verileri ve vardiya planlarına göre çıkan risk analizleri.</p>
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-lightbulb text-amber-400"></i> Bugüne Özel Saha Aksiyon & Dikkat Listesi
+                        </h2>
+                        <p class="text-xs text-slate-400">Geçmiş gün verileri ve bugünkü vardiya durumuna göre yapmanız gerekenler.</p>
                     </div>
-                    <button onclick="runSmartForecast()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg flex items-center">
-                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Tahminleri Yenile & Analiz Et
+                    <button onclick="renderForecast()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg flex items-center">
+                        <i class="fa-solid fa-arrows-rotate mr-2"></i>Analizi Yenile
                     </button>
                 </div>
-                <div id="forecastAlertsContainer" class="space-y-3"></div>
+
+                <!-- ÖZET KARTLARI -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="assistantSummaryCards"></div>
+
+                <!-- DETAYLI AKSİYON VE DİKKAT MADDELERİ -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-slate-200 border-b border-slate-700 pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-indigo-400"></i> Öncelikli Saha Görevleri
+                    </h3>
+                    <div id="assistantActionItems" class="space-y-3"></div>
+                </div>
             </div>
         </div>
 
@@ -319,7 +331,7 @@
     <!-- JavaScript Mantığı -->
     <script>
         // BURAYA GOOGLE APPS SCRIPT WEB APP URL'NİZİ YAPIŞTIRIN
-        const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzX2IlQj6B2J6J7G4utp0Bg49uZKluX11vSl3L8VwS3b2yysm5D0pzujgaDaDql4BFPog/exec";
+        const GOOGLE_SHEETS_API_URL = "BURAYA_WEB_APP_URL_YAPIŞTIRILACAK";
 
         const TARGET_SLA = 35;
 
@@ -494,6 +506,127 @@
 
             localStorage.setItem('saha_dailyRegionReports', JSON.stringify(dailyRegionReports));
             alert(`${date} tarihli gün sonu bölge raporu başarıyla kaydedildi!`);
+        }
+
+        // --- TAB 2: GEÇMİŞ VERİYE DAYALI AKILLI SAHA ASİSTANI (GÜNCELLENDİ) ---
+        function renderForecast() {
+            const summaryContainer = document.getElementById('assistantSummaryCards');
+            const actionsContainer = document.getElementById('assistantActionItems');
+            
+            summaryContainer.innerHTML = '';
+            actionsContainer.innerHTML = '';
+
+            const todayDays = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+            const currentDayName = todayDays[new Date().getDay()];
+
+            // Geçmiş veri analizi
+            let totalHistOrders = 0;
+            let histCount = 0;
+            let regionAvgOrders = {};
+            
+            regions.forEach(r => regionAvgOrders[r] = { sum: 0, count: 0, avg: 0 });
+
+            Object.keys(dailyRegionReports).forEach(dStr => {
+                const rData = dailyRegionReports[dStr];
+                regions.forEach(r => {
+                    if(rData[r] && rData[r].totalOrders > 0) {
+                        regionAvgOrders[r].sum += rData[r].totalOrders;
+                        regionAvgOrders[r].count++;
+                    }
+                });
+            });
+
+            let overallAvgPkg = 0;
+            let activeRegionCount = 0;
+            regions.forEach(r => {
+                if(regionAvgOrders[r].count > 0) {
+                    regionAvgOrders[r].avg = Math.round(regionAvgOrders[r].sum / regionAvgOrders[r].count);
+                    overallAvgPkg += regionAvgOrders[r].avg;
+                    activeRegionCount++;
+                } else {
+                    regionAvgOrders[r].avg = 100; // Varsayılan tahmini paket
+                    overallAvgPkg += 100;
+                }
+            });
+
+            // Üst Özet Kartları
+            summaryContainer.innerHTML = `
+                <div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 space-y-1">
+                    <span class="text-xs text-slate-400 font-medium">Bugün Beklenen Toplam Paket</span>
+                    <div class="text-2xl font-black text-indigo-400">~${overallAvgPkg} Paket</div>
+                    <span class="text-[11px] text-slate-400">Geçmiş ${currentDayName} günleri ortalaması</span>
+                </div>
+                <div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 space-y-1">
+                    <span class="text-xs text-slate-400 font-medium">Aktif Kurye Sayısı</span>
+                    <div class="text-2xl font-black text-emerald-400">${couriers.length} Kişi</div>
+                    <span class="text-[11px] text-slate-400">${regions.length} Bölgede Dağıtılmış</span>
+                </div>
+                <div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 space-y-1">
+                    <span class="text-xs text-slate-400 font-medium">Kurye Başı Düşen Hedef</span>
+                    <div class="text-2xl font-black text-amber-400">~${couriers.length > 0 ? Math.round(overallAvgPkg / couriers.length) : 0} Pak/Kurye</div>
+                    <span class="text-[11px] text-slate-400">SLA Hedefi: &le; 35 Dakika</span>
+                </div>
+            `;
+
+            let actionList = [];
+
+            // 1. Bölge Bazlı Vardiya Açığı ve Paket Yoğunluğu Kontrolü
+            regions.forEach(reg => {
+                const regCouriers = couriers.filter(c => c.region === reg);
+                const estPkg = regionAvgOrders[reg].avg;
+                const neededCouriers = Math.ceil(estPkg / 25); // Kurye başı ort. 25 paket kapasitesi kabul edilir
+
+                if(regCouriers.length === 0) {
+                    actionList.push({
+                        type: 'danger',
+                        title: `🚨 ${reg} Bölgesinde Kurye Yok!`,
+                        desc: `Geçmiş verilere göre bugün ${reg} bölgesinde tahmini <strong>${estPkg} paket</strong> bekleniyor fakat kayıtlı kurye yok. Acil kurye kaydırılmalı.`
+                    });
+                } else if(regCouriers.length < neededCouriers) {
+                    actionList.push({
+                        type: 'warning',
+                        title: `⚡ ${reg} Bölgesinde Vardiya Açığı Riski`,
+                        desc: `Geçmiş ortalamalara göre bugün beklenen <strong>${estPkg} paket</strong> için en az <strong>${neededCouriers} kurye</strong> gerekiyor. Şu an ${regCouriers.length} kurye var. Akşam saatlerine destek planlayın.`
+                    });
+                } else {
+                    actionList.push({
+                        type: 'success',
+                        title: `✅ ${reg} Bölgesi Operasyona Hazır`,
+                        desc: `Tahmini <strong>${estPkg} paket</strong> yükü için tanımlı ${regCouriers.length} kurye yeterli görünüyor.`
+                    });
+                }
+            });
+
+            // 2. Kurye Takip ve Uyumluluk Uyarısı (Geçmiş Devamsızlıklara Göre)
+            couriers.forEach(c => {
+                let recentAbsences = 0;
+                Object.keys(dailyCourierReports).forEach(dStr => {
+                    const cRep = dailyCourierReports[dStr][c.id];
+                    if(cRep && (cRep.isAbsence || cRep.isMismatch)) recentAbsences++;
+                });
+
+                if(recentAbsences >= 2) {
+                    actionList.push({
+                        type: 'warning',
+                        title: `⚠️ Kurye Takip: ${c.name} (${c.region})`,
+                        desc: `Bu kuryenin geçmiş kayıtlarda <strong>${recentAbsences} kez devamsızlık/uyumsuzluk</strong> kaydı var. Bugünkü vardiya başlangıcını ve paket durumunu yakından takip edin.`
+                    });
+                }
+            });
+
+            // Maddeleri Ekrana Bas
+            actionList.forEach(item => {
+                let borderClass = "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
+                if(item.type === 'danger') borderClass = "border-rose-500/40 bg-rose-500/10 text-rose-200";
+                if(item.type === 'warning') borderClass = "border-amber-500/40 bg-amber-500/10 text-amber-200";
+
+                actionsContainer.innerHTML += `
+                    <div class="p-4 rounded-xl border ${borderClass} space-y-1">
+                        <div class="font-bold text-sm">${item.title}</div>
+                        <div class="text-xs text-slate-300 leading-relaxed">${item.desc}</div>
+                    </div>
+                `;
+            });
         }
 
         // --- TAB 3: BÖLGE BAZLI VARDİYA PLANLAMA ---
@@ -778,7 +911,6 @@
             
             if(confirm(`"${courier.name}" adlı kuryeyi hem bu panelden hem de Google E-Tablo'dan kalıcı olarak silmek istediğinize emin misiniz?`)) {
                 
-                // Eğer Google Apps Script URL tanımlıysa e-tablodan da silme isteği atalım
                 if(GOOGLE_SHEETS_API_URL && !GOOGLE_SHEETS_API_URL.includes("BURAYA_WEB_APP_URL")) {
                     try {
                         const deleteUrl = `${GOOGLE_SHEETS_API_URL}?action=deleteCourier&phone=${encodeURIComponent(courier.phone || '')}&name=${encodeURIComponent(courier.name)}`;
@@ -788,7 +920,6 @@
                     }
                 }
 
-                // Yerel listeden kaldır
                 couriers = couriers.filter(c => c.id !== id);
                 delete weeklyShifts[id];
                 
@@ -991,50 +1122,6 @@
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Haftalık Vardiyalar");
             XLSX.writeFile(workbook, `Haftalik_Vardiya_Plani_${new Date().toISOString().split('T')[0]}.xlsx`);
-        }
-
-        function runSmartForecast() { renderForecast(); }
-
-        function renderForecast() {
-            const container = document.getElementById('forecastAlertsContainer');
-            container.innerHTML = '';
-
-            regions.forEach(reg => {
-                const regCouriers = couriers.filter(c => c.region === reg);
-                const courierCount = regCouriers.length;
-                
-                let riskLevel = "normal";
-                let alertTitle = `${reg} Bölgesi - Operasyon Dengeli`;
-                let alertDesc = `Bölgede tanımlı ${courierCount} kurye mevcut. Tahmini vardiyalarla sipariş yükü karşılanabilir.`;
-                let badgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-
-                if (courierCount === 0) {
-                    riskLevel = "high";
-                    alertTitle = `⚠️ ${reg} Bölgesi - Kurye Tanımlanmamış!`;
-                    alertDesc = `Bu bölge için tanımlı kurye bulunmuyor. Sipariş akışında büyük aksama ve Ata İptal riski yüksek.`;
-                    badgeClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
-                } else if (courierCount < 2) {
-                    riskLevel = "medium";
-                    alertTitle = `⚡ ${reg} Bölgesi - Yoğun Saat / SLA Riski`;
-                    alertDesc = `Tanımli kurye sayısı (${courierCount}) akşam zirve saatlerinde ${TARGET_SLA} dk teslimat süresi hedefini aşabilir.`;
-                    badgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
-                }
-
-                container.innerHTML += `
-                    <div class="bg-slate-700/40 p-4 rounded-xl border border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div class="space-y-1">
-                            <div class="flex items-center space-x-2">
-                                <h3 class="font-bold text-base text-white">${alertTitle}</h3>
-                                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badgeClass}">${riskLevel.toUpperCase()}</span>
-                            </div>
-                            <p class="text-xs text-slate-300">${alertDesc}</p>
-                        </div>
-                        <div class="text-xs bg-slate-800 px-3 py-2 rounded-lg border border-slate-600 text-slate-300 whitespace-nowrap">
-                            Kayıtlı Kurye: <span class="font-bold text-indigo-400">${courierCount} Kişi</span>
-                        </div>
-                    </div>
-                `;
-            });
         }
 
         function renderSettings() {
