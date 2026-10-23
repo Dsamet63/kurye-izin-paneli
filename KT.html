@@ -138,7 +138,7 @@
             <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-wrap justify-between items-center gap-4">
                 <div>
                     <h2 class="text-xl font-bold">Kurye Performans & Akıllı Saha Koçluğu</h2>
-                    <p class="text-xs text-slate-400">Günlük, Haftalık veya Aylık bazda kurye performanslarını ve AI analizlerini inceleyin.</p>
+                    <p class="text-xs text-slate-400">Bölgeye, isme göre filtreleyerek kurye performanslarını ve AI analizlerini inceleyin.</p>
                 </div>
                 <div class="flex items-center space-x-2 flex-wrap gap-2">
                     <button onclick="syncFromGoogleSheets()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center shadow-md">
@@ -164,18 +164,36 @@
                 </div>
             </div>
 
+            <!-- FİLTRELEME ÇUBUĞU (BÖLGE & İSİM) -->
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex items-center space-x-3 flex-wrap gap-3 flex-grow">
+                    <div class="flex items-center space-x-2">
+                        <label class="text-xs text-slate-400 font-semibold"><i class="fa-solid fa-filter mr-1"></i>Bölge Filtresi:</label>
+                        <select id="filterRegionSelect" onchange="renderCouriers()" class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white font-medium focus:outline-none focus:border-indigo-500">
+                            <option value="ALL">Tüm Bölgeler</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center space-x-2 flex-grow max-w-xs">
+                        <label class="text-xs text-slate-400 font-semibold"><i class="fa-solid fa-magnifying-glass mr-1"></i>Arama:</label>
+                        <input type="text" id="searchCourierInput" oninput="renderCouriers()" placeholder="Kurye adı ara..." class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+                <div id="filteredCourierCountBadge" class="text-xs text-slate-400 font-medium"></div>
+            </div>
+
             <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-slate-300">
                         <thead class="bg-slate-700 text-xs uppercase text-slate-300">
                             <tr>
-                                <th class="p-3">Kurye Adı</th>
+                                <th class="p-3">Kurye Ad Soyad</th>
                                 <th class="p-3">Bölgesi</th>
                                 <th class="p-3" id="thPackagesLabel">Toplam Paket</th>
                                 <th class="p-3" id="thAbsenceLabel">Devamsızlık (&lt;15p)</th>
                                 <th class="p-3">Uyumsuzluk (Geç/Erken)</th>
                                 <th class="p-3">Vardiya Uyumu</th>
                                 <th class="p-3 w-1/3">AI Saha Tavsiyesi & Konuşma Konusu</th>
+                                <th class="p-3 text-right">İşlem</th>
                             </tr>
                         </thead>
                         <tbody id="courierTableBody" class="divide-y divide-slate-700"></tbody>
@@ -301,7 +319,7 @@
     <!-- JavaScript Mantığı -->
     <script>
         // BURAYA GOOGLE APPS SCRIPT WEB APP URL'NİZİ YAPIŞTIRIN
-        const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzX2IlQj6B2J6J7G4utp0Bg49uZKluX11vSl3L8VwS3b2yysm5D0pzujgaDaDql4BFPog/exec";
+        const GOOGLE_SHEETS_API_URL = "BURAYA_WEB_APP_URL_YAPIŞTIRILACAK";
 
         const TARGET_SLA = 35;
 
@@ -334,7 +352,6 @@
                 btn.classList.add('text-slate-300', 'hover:bg-slate-700');
             });
             
-            // Tıklanan butonu renklendir
             if(event && event.currentTarget) {
                 event.currentTarget.classList.add('bg-indigo-600', 'text-white');
                 event.currentTarget.classList.remove('text-slate-300', 'hover:bg-slate-700');
@@ -343,7 +360,10 @@
             if(tabId === 'daily-entry') renderDailyEntry();
             if(tabId === 'forecast') renderForecast();
             if(tabId === 'shifts') renderShifts();
-            if(tabId === 'couriers') renderCouriers();
+            if(tabId === 'couriers') {
+                populateFilterRegionDropdown();
+                renderCouriers();
+            }
             if(tabId === 'settings') renderSettings();
         }
 
@@ -405,6 +425,7 @@
                 localStorage.setItem('saha_couriers', JSON.stringify(couriers));
                 localStorage.setItem('saha_weeklyShifts', JSON.stringify(weeklyShifts));
 
+                populateFilterRegionDropdown();
                 renderCouriers();
                 renderShifts();
                 alert("Kuryeler ve izin talepleri Google E-Tablo'dan başarıyla senkronize edildi!");
@@ -495,7 +516,7 @@
             const regionCouriers = couriers.filter(c => c.region === selectedShiftRegion);
 
             if(regionCouriers.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400">${selectedShiftRegion} bölgesine ait kurye bulunamadı. Üstteki <strong class="text-cyan-400">"E-Tablodan Verileri Çek"</strong> butonunu kullanabilirsiniz.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400">${selectedShiftRegion} bölgesine ait kurye bulunamadı.</td></tr>`;
                 return;
             }
 
@@ -648,12 +669,39 @@
             renderCouriers();
         }
 
+        function populateFilterRegionDropdown() {
+            const select = document.getElementById('filterRegionSelect');
+            if(!select) return;
+            const currentVal = select.value;
+            select.innerHTML = `<option value="ALL">Tüm Bölgeler</option>`;
+            regions.forEach(reg => {
+                select.innerHTML += `<option value="${reg}">${reg}</option>`;
+            });
+            select.value = regions.includes(currentVal) || currentVal === 'ALL' ? currentVal : 'ALL';
+        }
+
         function renderCouriers() {
             const mode = document.getElementById('reportPeriodMode').value;
+            const filterRegion = document.getElementById('filterRegionSelect')?.value || 'ALL';
+            const searchQuery = (document.getElementById('searchCourierInput')?.value || '').toLowerCase().trim();
             const tbody = document.getElementById('courierTableBody');
             tbody.innerHTML = '';
 
-            couriers.forEach(c => {
+            // Filtreleme (Bölge ve İsim)
+            let filteredCouriers = couriers.filter(c => {
+                const matchRegion = (filterRegion === 'ALL' || c.region === filterRegion);
+                const matchName = c.name.toLowerCase().includes(searchQuery);
+                return matchRegion && matchName;
+            });
+
+            document.getElementById('filteredCourierCountBadge').innerText = `Gösterilen: ${filteredCouriers.length} / ${couriers.length} Kurye`;
+
+            if(filteredCouriers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400">Aradığınız kriterlere uygun kurye bulunamadı.</td></tr>`;
+                return;
+            }
+
+            filteredCouriers.forEach(c => {
                 let pkg = 0;
                 let absCount = 0;
                 let misCount = 0;
@@ -706,7 +754,7 @@
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-700/50">
                         <td class="p-3 font-bold text-white whitespace-nowrap">${c.name}</td>
-                        <td class="p-3 text-slate-300 whitespace-nowrap">${c.region}</td>
+                        <td class="p-3 text-slate-300 whitespace-nowrap"><span class="bg-slate-700 px-2 py-1 rounded text-xs">${c.region}</span></td>
                         <td class="p-3 text-indigo-300 font-bold whitespace-nowrap">${pkg} Pak.</td>
                         <td class="p-3 whitespace-nowrap">
                             <span class="${absCount > 0 ? 'text-rose-400 font-bold' : 'text-slate-400'}">${absCount} ${mode === 'daily' ? (absCount > 0 ? 'Var' : 'Yok') : 'Gün'}</span>
@@ -715,9 +763,31 @@
                         <td class="p-3 text-amber-400 whitespace-nowrap">${misCount} Kez</td>
                         <td class="p-3 font-bold whitespace-nowrap ${compliance < 80 ? 'text-rose-400' : 'text-emerald-400'}">%${compliance}</td>
                         <td class="p-3">${aiAnalysis}</td>
+                        <td class="p-3 text-right whitespace-nowrap">
+                            <button onclick="deleteCourier(${c.id})" class="text-rose-400 hover:text-rose-300 text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1.5 rounded border border-rose-500/30 transition" title="Kuryeyi Sil">
+                                <i class="fa-solid fa-trash mr-1"></i>Sil
+                            </button>
+                        </td>
                     </tr>
                 `;
             });
+        }
+
+        function deleteCourier(id) {
+            const courier = couriers.find(c => c.id === id);
+            if(!courier) return;
+            
+            if(confirm(`"${courier.name}" adlı kuryeyi veritabanından silmek istediğinize emin misiniz?`)) {
+                couriers = couriers.filter(c => c.id !== id);
+                delete weeklyShifts[id];
+                
+                localStorage.setItem('saha_couriers', JSON.stringify(couriers));
+                localStorage.setItem('saha_weeklyShifts', JSON.stringify(weeklyShifts));
+                
+                renderCouriers();
+                renderShifts();
+                alert("Kurye başarıyla silindi.");
+            }
         }
 
         function generateAiAdviceForPeriod(courier, pkg, absCount, misCount, mode, periodLabel) {
@@ -790,6 +860,7 @@
             couriers.push({ id: Date.now(), name, region });
             localStorage.setItem('saha_couriers', JSON.stringify(couriers));
             closeAddCourierModal();
+            populateFilterRegionDropdown();
             renderCouriers();
             renderShifts();
         }
@@ -880,7 +951,9 @@
 
         function exportCouriersToExcel() {
             const mode = document.getElementById('reportPeriodMode').value;
-            const excelData = couriers.map(c => {
+            const filterRegion = document.getElementById('filterRegionSelect')?.value || 'ALL';
+            
+            const excelData = couriers.filter(c => filterRegion === 'ALL' || c.region === filterRegion).map(c => {
                 return {
                     "Kurye Ad Soyad": c.name,
                     "Bölgesi": c.region,
@@ -976,6 +1049,7 @@
             input.value = '';
             renderSettings();
             renderShifts();
+            populateFilterRegionDropdown();
         }
 
         function removeRegion(index) {
@@ -984,10 +1058,12 @@
             localStorage.setItem('saha_regions', JSON.stringify(regions));
             renderSettings();
             renderShifts();
+            populateFilterRegionDropdown();
         }
 
-        // Sayfa açıldığında ilk yükleme
+        // İlk yükleme
         changeReportPeriodMode();
+        populateFilterRegionDropdown();
     </script>
 </body>
 </html>
