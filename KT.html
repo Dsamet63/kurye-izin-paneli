@@ -141,18 +141,15 @@
                     <p class="text-xs text-slate-400">Günlük, Haftalık veya Aylık bazda kurye performanslarını ve AI analizlerini inceleyin.</p>
                 </div>
                 <div class="flex items-center space-x-2 flex-wrap gap-2">
-                    <!-- Google Sheets Senkronizasyon Butonu -->
                     <button onclick="syncFromGoogleSheets()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center shadow-md">
                         <i class="fa-solid fa-cloud-arrow-down mr-2"></i>E-Tablodan Verileri Çek
                     </button>
-                    <!-- Görünüm Modu Seçici (Günlük / Haftalık / Aylık) -->
                     <select id="reportPeriodMode" onchange="changeReportPeriodMode()" class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white font-bold focus:outline-none focus:border-indigo-500">
                         <option value="daily">Günlük Görünüm</option>
                         <option value="weekly">Haftalık Özet</option>
                         <option value="monthly">Aylık Özet</option>
                     </select>
 
-                    <!-- Dinamik Tarih / Hafta / Ay Seçici Alanı -->
                     <div id="periodInputContainer" class="flex items-center bg-slate-700 border border-slate-600 rounded-lg px-2 py-1"></div>
 
                     <button onclick="exportCouriersToExcel()" class="bg-green-700 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center">
@@ -303,8 +300,8 @@
 
     <!-- JavaScript Mantığı -->
     <script>
-        // BURAYA KURYELER İZİN SİTENİN GOOGLE APPS SCRIPT WEB APP URL'SİNİ YAPIŞTIRIN
-        const GOOGLE_SHEETS_API_URL = "AKfycbzX2IlQj6B2J6J7G4utp0Bg49uZKluX11vSl3L8VwS3b2yysm5D0pzujgaDaDql4BFPog";
+        // BURAYA GOOGLE APPS SCRIPT WEB APP URL'NİZİ YAPIŞTIRIN
+        const GOOGLE_SHEETS_API_URL = "BURAYA_WEB_APP_URL_YAPIŞTIRILACAK";
 
         const TARGET_SLA = 35;
 
@@ -328,8 +325,6 @@
         const todayStr = new Date().toISOString().split('T')[0];
         document.getElementById('dailyReportDate').value = todayStr;
 
-        changeReportPeriodMode();
-
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('tab-' + tabId).classList.remove('hidden');
@@ -338,8 +333,12 @@
                 btn.classList.remove('bg-indigo-600', 'text-white');
                 btn.classList.add('text-slate-300', 'hover:bg-slate-700');
             });
-            event.currentTarget.classList.add('bg-indigo-600', 'text-white');
-            event.currentTarget.classList.remove('text-slate-300', 'hover:bg-slate-700');
+            
+            // Tıklanan butonu renklendir
+            if(event && event.currentTarget) {
+                event.currentTarget.classList.add('bg-indigo-600', 'text-white');
+                event.currentTarget.classList.remove('text-slate-300', 'hover:bg-slate-700');
+            }
 
             if(tabId === 'daily-entry') renderDailyEntry();
             if(tabId === 'forecast') renderForecast();
@@ -348,7 +347,7 @@
             if(tabId === 'settings') renderSettings();
         }
 
-        // --- GOOGLE SHEETS (İZİN PANELİ) ENTEGRASYONU ---
+        // --- GOOGLE SHEETS ENTEGRASYONU ---
         async function syncFromGoogleSheets() {
             if(!GOOGLE_SHEETS_API_URL || GOOGLE_SHEETS_API_URL.includes("BURAYA_WEB_APP_URL")) {
                 alert("Lütfen koda geçerli bir Google Apps Script Web App URL adresi ekleyin!");
@@ -364,13 +363,12 @@
                     return;
                 }
 
-                // 1. Kuryeleri Senkronize Et (Kuryeler sekmesi: [Telefon, Ad Soyad, Bölge, Sabit Gün])
                 if(resData.users && resData.users.length > 0) {
                     resData.users.forEach(u => {
                         let phone = u[0];
                         let name = u[1];
                         let region = u[2] || regions[0];
-                        let fixedDay = u[3]; // Sabit izin günü
+                        let fixedDay = u[3];
 
                         if(!name) return;
 
@@ -384,7 +382,6 @@
                             existing.phone = String(phone);
                         }
 
-                        // Eğer tablodan sabit izin günü tanımlandıysa haftalık vardiyaya OFF olarak işle
                         if(fixedDay && fixedDay.trim() !== "") {
                             if(!weeklyShifts[existing.id]) weeklyShifts[existing.id] = {};
                             weeklyShifts[existing.id][fixedDay.trim()] = "OFF";
@@ -392,11 +389,10 @@
                     });
                 }
 
-                // 2. Talepleri Senkronize Et (Talepler sekmesi: [Bölge, Ad Soyad, Telefon, Gün, Tarih])
                 if(resData.submissions && resData.submissions.length > 0) {
                     resData.submissions.forEach(sub => {
                         let subName = sub[1];
-                        let subDay = sub[3]; // Onaylanan/talep edilen gün
+                        let subDay = sub[3];
 
                         let courierObj = couriers.find(c => c.name.toLowerCase() === String(subName).toLowerCase());
                         if(courierObj && subDay) {
@@ -969,16 +965,19 @@
                 `;
             });
         }
+
         function addRegion() {
-            const name = document.getElementById('newRegionName').value.trim();
+            const input = document.getElementById('newRegionName');
+            const name = input ? input.value.trim() : "";
             if(!name) return;
             if(regions.includes(name)) return alert("Bu bölge zaten var.");
             regions.push(name);
             localStorage.setItem('saha_regions', JSON.stringify(regions));
-            document.getElementById('newNameName']?.value;
+            input.value = '';
             renderSettings();
             renderShifts();
         }
+
         function removeRegion(index) {
             if(regions.length <= 1) return alert("En az 1 bölge kalmalıdır.");
             regions.splice(index, 1);
@@ -987,7 +986,8 @@
             renderShifts();
         }
 
-        renderCouriers();
+        // Sayfa açıldığında ilk yükleme
+        changeReportPeriodMode();
     </script>
 </body>
 </html>
