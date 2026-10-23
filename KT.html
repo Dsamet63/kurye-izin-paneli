@@ -247,16 +247,16 @@
                 <div>
                     <div class="flex justify-between items-center mb-1">
                         <label class="block text-xs text-slate-400">Uygulanacak Günler</label>
-                        <button type="button" onclick="selectAllDaysToggle()" class="text-[11px] text-indigo-400 hover:underline">Tümünü Seç / Kaldır</button>
+                        <button type="button" id="selectAllToggleBtn" onclick="selectAllDaysToggle()" class="text-[11px] text-indigo-400 hover:underline">Tümünü Seç / Kaldır</button>
                     </div>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-700/50 p-2.5 rounded-lg border border-slate-600/60" id="daysCheckboxGroup">
-                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Pazartesi" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Pzt</span></label>
-                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Salı" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Sal</span></label>
-                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Çarşamba" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Çar</span></label>
-                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Perşembe" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Per</span></label>
-                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Cuma" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Cum</span></label>
-                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Cumartesi" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Cmt</span></label>
-                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Pazar" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Paz</span></label>
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Pazartesi" onchange="handleDayCheckboxChange(this)" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Pzt</span></label>
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Salı" onchange="handleDayCheckboxChange(this)" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Sal</span></label>
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Çarşamba" onchange="handleDayCheckboxChange(this)" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Çar</span></label>
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Perşembe" onchange="handleDayCheckboxChange(this)" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Per</span></label>
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Cuma" onchange="handleDayCheckboxChange(this)" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Cum</span></label>
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Cumartesi" onchange="handleDayCheckboxChange(this)" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Cmt</span></label>
+                        <label class="flex items-center space-x-1.5 text-xs"><input type="checkbox" value="Pazar" onchange="handleDayCheckboxChange(this)" class="day-check rounded text-indigo-600 bg-slate-700 border-slate-600"><span>Paz</span></label>
                     </div>
                 </div>
 
@@ -331,7 +331,7 @@
     <!-- JavaScript Mantığı -->
     <script>
         // BURAYA GOOGLE APPS SCRIPT WEB APP URL'NİZİ YAPIŞTIRIN
-        const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzX2IlQj6B2J6J7G4utp0Bg49uZKluX11vSl3L8VwS3b2yysm5D0pzujgaDaDql4BFPog/exec";
+        const GOOGLE_SHEETS_API_URL = "BURAYA_WEB_APP_URL_YAPIŞTIRILACAK";
 
         const TARGET_SLA = 35;
 
@@ -416,6 +416,9 @@
 
                         if(fixedDay && fixedDay.trim() !== "") {
                             if(!weeklyShifts[existing.id]) weeklyShifts[existing.id] = {};
+                            // Önceki sabit izin gününü güncelle
+                            const allDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+                            allDays.forEach(d => { if(weeklyShifts[existing.id][d] === 'OFF') delete weeklyShifts[existing.id][d]; });
                             weeklyShifts[existing.id][fixedDay.trim()] = "OFF";
                         }
                     });
@@ -429,6 +432,8 @@
                         let courierObj = couriers.find(c => c.name.toLowerCase() === String(subName).toLowerCase());
                         if(courierObj && subDay) {
                             if(!weeklyShifts[courierObj.id]) weeklyShifts[courierObj.id] = {};
+                            const allDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+                            allDays.forEach(d => { if(weeklyShifts[courierObj.id][d] === 'OFF') delete weeklyShifts[courierObj.id][d]; });
                             weeklyShifts[courierObj.id][String(subDay).trim()] = "OFF";
                         }
                     });
@@ -508,7 +513,7 @@
             alert(`${date} tarihli gün sonu bölge raporu başarıyla kaydedildi!`);
         }
 
-        // --- TAB 2: GEÇMİŞ VERİYE DAYALI AKILLI SAHA ASİSTANI (GÜNCELLENDİ) ---
+        // --- TAB 2: GEÇMİŞ VERİYE DAYALI AKILLI SAHA ASİSTANI ---
         function renderForecast() {
             const summaryContainer = document.getElementById('assistantSummaryCards');
             const actionsContainer = document.getElementById('assistantActionItems');
@@ -519,11 +524,7 @@
             const todayDays = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
             const currentDayName = todayDays[new Date().getDay()];
 
-            // Geçmiş veri analizi
-            let totalHistOrders = 0;
-            let histCount = 0;
             let regionAvgOrders = {};
-            
             regions.forEach(r => regionAvgOrders[r] = { sum: 0, count: 0, avg: 0 });
 
             Object.keys(dailyRegionReports).forEach(dStr => {
@@ -537,19 +538,16 @@
             });
 
             let overallAvgPkg = 0;
-            let activeRegionCount = 0;
             regions.forEach(r => {
                 if(regionAvgOrders[r].count > 0) {
                     regionAvgOrders[r].avg = Math.round(regionAvgOrders[r].sum / regionAvgOrders[r].count);
                     overallAvgPkg += regionAvgOrders[r].avg;
-                    activeRegionCount++;
                 } else {
-                    regionAvgOrders[r].avg = 100; // Varsayılan tahmini paket
+                    regionAvgOrders[r].avg = 100;
                     overallAvgPkg += 100;
                 }
             });
 
-            // Üst Özet Kartları
             summaryContainer.innerHTML = `
                 <div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 space-y-1">
                     <span class="text-xs text-slate-400 font-medium">Bugün Beklenen Toplam Paket</span>
@@ -570,11 +568,10 @@
 
             let actionList = [];
 
-            // 1. Bölge Bazlı Vardiya Açığı ve Paket Yoğunluğu Kontrolü
             regions.forEach(reg => {
                 const regCouriers = couriers.filter(c => c.region === reg);
                 const estPkg = regionAvgOrders[reg].avg;
-                const neededCouriers = Math.ceil(estPkg / 25); // Kurye başı ort. 25 paket kapasitesi kabul edilir
+                const neededCouriers = Math.ceil(estPkg / 25);
 
                 if(regCouriers.length === 0) {
                     actionList.push({
@@ -597,7 +594,6 @@
                 }
             });
 
-            // 2. Kurye Takip ve Uyumluluk Uyarısı (Geçmiş Devamsızlıklara Göre)
             couriers.forEach(c => {
                 let recentAbsences = 0;
                 Object.keys(dailyCourierReports).forEach(dStr => {
@@ -614,7 +610,6 @@
                 }
             });
 
-            // Maddeleri Ekrana Bas
             actionList.forEach(item => {
                 let borderClass = "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
                 if(item.type === 'danger') borderClass = "border-rose-500/40 bg-rose-500/10 text-rose-200";
@@ -728,7 +723,24 @@
             }
         }
 
+        // --- TEK OFF GÜNÜ SINIRLANDIRMASI VE DİNAMİK YÖNETİM ---
+        function handleDayCheckboxChange(changedCb) {
+            const status = document.getElementById('shiftStatusSelect').value;
+            
+            // Eğer OFF seçiliyse tek gün seçilmesine izin ver
+            if(status === 'OFF' && changedCb.checked) {
+                document.querySelectorAll('.day-check').forEach(cb => {
+                    if(cb !== changedCb) cb.checked = false;
+                });
+            }
+        }
+
         function selectAllDaysToggle() {
+            const status = document.getElementById('shiftStatusSelect').value;
+            if(status === 'OFF') {
+                alert("Haftalık İzin (OFF) için sadece 1 gün seçebilirsiniz!");
+                return;
+            }
             const checkboxes = document.querySelectorAll('.day-check');
             const allChecked = Array.from(checkboxes).every(cb => cb.checked);
             checkboxes.forEach(cb => cb.checked = !allChecked);
@@ -736,10 +748,25 @@
 
         function handleStatusChange(status) {
             const group = document.getElementById('timeInputsGroup');
+            const toggleBtn = document.getElementById('selectAllToggleBtn');
+
             if(status === 'WORK') {
                 group.classList.remove('opacity-30', 'pointer-events-none');
+                if(toggleBtn) toggleBtn.classList.remove('hidden');
             } else {
                 group.classList.add('opacity-30', 'pointer-events-none');
+                if(status === 'OFF') {
+                    if(toggleBtn) toggleBtn.classList.add('hidden');
+                    // Eger OFF secildiyse ve birden fazla checkbox seciliyse ilkini birak digerlerini kaldir
+                    const checkedList = document.querySelectorAll('.day-check:checked');
+                    if(checkedList.length > 1) {
+                        checkedList.forEach((cb, idx) => {
+                            if(idx > 0) cb.checked = false;
+                        });
+                    }
+                } else {
+                    if(toggleBtn) toggleBtn.classList.remove('hidden');
+                }
             }
         }
 
@@ -747,6 +774,7 @@
             document.getElementById('addShiftModal').classList.add('hidden');
         }
 
+        // --- VARDİYA KAYDETME VE İZİN GÜNÜ DEĞİŞTİRME ---
         function saveShift() {
             const courierId = document.getElementById('shiftCourierSelect').value;
             if(!courierId) return alert("Lütfen bir kurye seçin.");
@@ -760,20 +788,40 @@
 
             if(!weeklyShifts[courierId]) weeklyShifts[courierId] = {};
 
-            selectedDays.forEach(day => {
-                if(status === 'OFF') {
-                    weeklyShifts[courierId][day] = "OFF";
-                } else if(status === 'UNPAID_LEAVE') {
-                    weeklyShifts[courierId][day] = "Ücretsiz İzin";
-                } else {
-                    weeklyShifts[courierId][day] = `${startTime} / ${endTime}`;
+            const allDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+
+            // EĞER OFF SEÇİLDİYSE: Eski OFF gününü sil ve yeni seçilen günü OFF yap
+            if(status === 'OFF') {
+                if(selectedDays.length > 1) {
+                    return alert("Haftalık İzin (OFF) için sadece 1 gün seçebilirsiniz!");
                 }
-            });
+                
+                // Eski OFF kayıtlarını temizle (İzin gününü değiştirebilmeyi sağlar)
+                allDays.forEach(day => {
+                    if(weeklyShifts[courierId][day] === 'OFF') {
+                        delete weeklyShifts[courierId][day];
+                    }
+                });
+
+                // Yeni seçilen günü OFF yap
+                const targetDay = selectedDays[0];
+                weeklyShifts[courierId][targetDay] = "OFF";
+
+            } else {
+                // Normal Çalışma veya Ücretsiz İzin güncellemesi
+                selectedDays.forEach(day => {
+                    if(status === 'UNPAID_LEAVE') {
+                        weeklyShifts[courierId][day] = "Ücretsiz İzin";
+                    } else {
+                        weeklyShifts[courierId][day] = `${startTime} / ${endTime}`;
+                    }
+                });
+            }
 
             localStorage.setItem('saha_weeklyShifts', JSON.stringify(weeklyShifts));
             closeAddShiftModal();
             renderShifts();
-            alert(`${selectedDays.length} gün için vardiya planı başarıyla kaydedildi.`);
+            alert(`Kurye vardiya/izin durumu başarıyla güncellendi!`);
         }
 
         // --- TAB 4: KURYE PERFORMANS & DÖNEMSEL ANALİZ ---
