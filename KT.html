@@ -29,6 +29,7 @@
                 <button onclick="switchTab('forecast')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fa-solid fa-chart-pie mr-1.5"></i>Bugünün Saha Asistanı</button>
                 <button onclick="switchTab('shifts')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fa-solid fa-clock mr-1.5"></i>Kurye Vardiya Planı</button>
                 <button onclick="switchTab('couriers')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white transition"><i class="fa-solid fa-users mr-1.5"></i>Kurye Performans</button>
+                <button onclick="switchTab('agenda')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fa-solid fa-book-bookmark mr-1.5"></i>Ajanda & Notlar</button>
                 <button onclick="switchTab('settings')" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fa-solid fa-gear mr-1.5"></i>Bölge / Taban Veri</button>
             </nav>
         </div>
@@ -214,7 +215,48 @@
             </div>
         </div>
 
-        <!-- TAB 5: BÖLGE VE TABAN VERİ AYARLARI -->
+        <!-- TAB 5: AJANDA & NOT DEFTERİ (YENİ EKLENDİ) -->
+        <div id="tab-agenda" class="tab-content space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- SOL KOLON: AJANDA & ETKİNLİK PLANLAYICI -->
+                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
+                    <div class="flex justify-between items-center flex-wrap gap-2 border-b border-slate-700 pb-3">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-calendar-days text-indigo-400"></i> Operasyonel Ajanda
+                            </h2>
+                            <p class="text-xs text-slate-400">Tarih bazlı hatırlatıcılar ve yapılması gereken görevler.</p>
+                        </div>
+                        <button onclick="openAddAgendaModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center">
+                            <i class="fa-solid fa-plus mr-1"></i>Yeni Görev / Etkinlik
+                        </button>
+                    </div>
+
+                    <div id="agendaListContainer" class="space-y-3 max-h-[600px] overflow-y-auto pr-1"></div>
+                </div>
+
+                <!-- SAĞ KOLON: AKILLI NOT DEFTERİ -->
+                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
+                    <div class="flex justify-between items-center flex-wrap gap-2 border-b border-slate-700 pb-3">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-note-sticky text-amber-400"></i> Saha Not Defteri
+                            </h2>
+                            <p class="text-xs text-slate-400">Toplantı notları, kurye bildirimleri ve genel hatırlatmalar.</p>
+                        </div>
+                        <button onclick="openAddNoteModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center">
+                            <i class="fa-solid fa-pen-to-square mr-1"></i>Yeni Not Ekle
+                        </button>
+                    </div>
+
+                    <div id="notesGridContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto pr-1"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- TAB 6: BÖLGE VE TABAN VERİ AYARLARI -->
         <div id="tab-settings" class="tab-content space-y-6 hidden">
             <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
                 <h2 class="text-xl font-bold">Bölge Yönetimi</h2>
@@ -227,6 +269,66 @@
         </div>
 
     </main>
+
+    <!-- MODAL: YENİ AJANDA ETKİNLİĞİ EKLE -->
+    <div id="addAgendaModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-lg">Ajandaya Görev / Etkinlik Ekle</h3>
+                <button onclick="closeAddAgendaModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Tarih</label>
+                    <input type="date" id="agendaDate" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 font-bold text-white">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Başlık / Konu</label>
+                    <input type="text" id="agendaTitle" placeholder="Örn: Maslak kuryeleri ile toplantı" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Açıklama / Detaylar</label>
+                    <textarea id="agendaDesc" rows="3" placeholder="Görev detayları..." class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-700 flex justify-end space-x-3">
+                <button onclick="closeAddAgendaModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-sm font-medium rounded-lg">İptal</button>
+                <button onclick="saveAgendaItem()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-sm font-medium rounded-lg text-white">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: YENİ NOT EKLE -->
+    <div id="addNoteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-lg">Saha Notu Oluştur</h3>
+                <button onclick="closeAddNoteModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Not Başlığı</label>
+                    <input type="text" id="noteTitle" placeholder="Örn: Ekipman eksikleri haritası" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Önem Derecesi</label>
+                    <select id="notePriority" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 font-bold">
+                        <option value="normal">Normal</option>
+                        <option value="high">🚨 Yüksek Önem</option>
+                        <option value="low">Düşük Önem</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Not İçeriği</label>
+                    <textarea id="noteContent" rows="4" placeholder="Not aldığınız detaylar..." class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-700 flex justify-end space-x-3">
+                <button onclick="closeAddNoteModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-sm font-medium rounded-lg">İptal</button>
+                <button onclick="saveNoteItem()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-sm font-medium rounded-lg text-white">Notu Kaydet</button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL: DETAYLI VARDİYA GİRİŞİ -->
     <div id="addShiftModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -331,7 +433,7 @@
     <!-- JavaScript Mantığı -->
     <script>
         // BURAYA GOOGLE APPS SCRIPT WEB APP URL'NİZİ YAPIŞTIRIN
-        const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzX2IlQj6B2J6J7G4utp0Bg49uZKluX11vSl3L8VwS3b2yysm5D0pzujgaDaDql4BFPog/exec";
+        const GOOGLE_SHEETS_API_URL = "BURAYA_WEB_APP_URL_YAPIŞTIRILACAK";
 
         const TARGET_SLA = 35;
 
@@ -351,6 +453,14 @@
 
         let dailyCourierReports = JSON.parse(localStorage.getItem('saha_dailyCourierReports')) || {};
         let weeklyShifts = JSON.parse(localStorage.getItem('saha_weeklyShifts')) || {};
+
+        // AJANDA VE NOT VERİ DEPOLARI
+        let agendaItems = JSON.parse(localStorage.getItem('saha_agendaItems')) || [
+            { id: 1, date: new Date().toISOString().split('T')[0], title: "Haftalık Kurye Toplantısı", desc: "Maslak bölgesi vardiya saatleri konuşulacak", completed: false }
+        ];
+        let noteItems = JSON.parse(localStorage.getItem('saha_noteItems')) || [
+            { id: 1, title: "Sarıyer Yağmurluk Siparişi", content: "3 kurye için L beden yağmurluk istenecek.", priority: "high", date: new Date().toLocaleDateString('tr-TR') }
+        ];
 
         const todayStr = new Date().toISOString().split('T')[0];
         document.getElementById('dailyReportDate').value = todayStr;
@@ -375,6 +485,10 @@
             if(tabId === 'couriers') {
                 populateFilterRegionDropdown();
                 renderCouriers();
+            }
+            if(tabId === 'agenda') {
+                renderAgenda();
+                renderNotes();
             }
             if(tabId === 'settings') renderSettings();
         }
@@ -416,7 +530,6 @@
 
                         if(fixedDay && fixedDay.trim() !== "") {
                             if(!weeklyShifts[existing.id]) weeklyShifts[existing.id] = {};
-                            // Önceki sabit izin gününü güncelle
                             const allDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
                             allDays.forEach(d => { if(weeklyShifts[existing.id][d] === 'OFF') delete weeklyShifts[existing.id][d]; });
                             weeklyShifts[existing.id][fixedDay.trim()] = "OFF";
@@ -723,11 +836,8 @@
             }
         }
 
-        // --- TEK OFF GÜNÜ SINIRLANDIRMASI VE DİNAMİK YÖNETİM ---
         function handleDayCheckboxChange(changedCb) {
             const status = document.getElementById('shiftStatusSelect').value;
-            
-            // Eğer OFF seçiliyse tek gün seçilmesine izin ver
             if(status === 'OFF' && changedCb.checked) {
                 document.querySelectorAll('.day-check').forEach(cb => {
                     if(cb !== changedCb) cb.checked = false;
@@ -757,7 +867,6 @@
                 group.classList.add('opacity-30', 'pointer-events-none');
                 if(status === 'OFF') {
                     if(toggleBtn) toggleBtn.classList.add('hidden');
-                    // Eger OFF secildiyse ve birden fazla checkbox seciliyse ilkini birak digerlerini kaldir
                     const checkedList = document.querySelectorAll('.day-check:checked');
                     if(checkedList.length > 1) {
                         checkedList.forEach((cb, idx) => {
@@ -774,7 +883,6 @@
             document.getElementById('addShiftModal').classList.add('hidden');
         }
 
-        // --- VARDİYA KAYDETME VE İZİN GÜNÜ DEĞİŞTİRME ---
         function saveShift() {
             const courierId = document.getElementById('shiftCourierSelect').value;
             if(!courierId) return alert("Lütfen bir kurye seçin.");
@@ -790,25 +898,21 @@
 
             const allDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 
-            // EĞER OFF SEÇİLDİYSE: Eski OFF gününü sil ve yeni seçilen günü OFF yap
             if(status === 'OFF') {
                 if(selectedDays.length > 1) {
                     return alert("Haftalık İzin (OFF) için sadece 1 gün seçebilirsiniz!");
                 }
                 
-                // Eski OFF kayıtlarını temizle (İzin gününü değiştirebilmeyi sağlar)
                 allDays.forEach(day => {
                     if(weeklyShifts[courierId][day] === 'OFF') {
                         delete weeklyShifts[courierId][day];
                     }
                 });
 
-                // Yeni seçilen günü OFF yap
                 const targetDay = selectedDays[0];
                 weeklyShifts[courierId][targetDay] = "OFF";
 
             } else {
-                // Normal Çalışma veya Ücretsiz İzin güncellemesi
                 selectedDays.forEach(day => {
                     if(status === 'UNPAID_LEAVE') {
                         weeklyShifts[courierId][day] = "Ücretsiz İzin";
@@ -1034,6 +1138,158 @@
                     </div>
                 `;
             }
+        }
+
+        // --- TAB 5: AJANDA & NOT DEFTERİ MANTIĞI (YENİ) ---
+        function renderAgenda() {
+            const container = document.getElementById('agendaListContainer');
+            container.innerHTML = '';
+
+            if(agendaItems.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Henüz kayıtlı ajanda görevi yok.</p>`;
+                return;
+            }
+
+            // Tarihe göre sırala
+            agendaItems.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+            agendaItems.forEach(item => {
+                const isPast = new Date(item.date) < new Date(todayStr) && !item.completed;
+                const statusBadge = item.completed 
+                    ? `<span class="bg-emerald-500/20 text-emerald-300 text-[10px] px-2 py-0.5 rounded border border-emerald-500/30 font-semibold"><i class="fa-solid fa-check mr-1"></i>Tamamlandı</span>`
+                    : (isPast ? `<span class="bg-rose-500/20 text-rose-300 text-[10px] px-2 py-0.5 rounded border border-rose-500/30 font-semibold"><i class="fa-solid fa-clock mr-1"></i>Günü Geçti</span>` : `<span class="bg-amber-500/20 text-amber-300 text-[10px] px-2 py-0.5 rounded border border-amber-500/30 font-semibold">Bekliyor</span>`);
+
+                container.innerHTML += `
+                    <div class="bg-slate-700/40 p-3.5 rounded-xl border ${item.completed ? 'border-slate-700 opacity-60' : 'border-slate-600'} space-y-2 transition">
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-calendar text-[10px]"></i> ${new Date(item.date).toLocaleDateString('tr-TR')}
+                            </span>
+                            ${statusBadge}
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white ${item.completed ? 'line-through text-slate-400' : ''}">${item.title}</h4>
+                            ${item.desc ? `<p class="text-xs text-slate-300 mt-1">${item.desc}</p>` : ''}
+                        </div>
+                        <div class="flex justify-end items-center space-x-2 pt-1 border-t border-slate-700/60">
+                            <button onclick="toggleAgendaStatus(${item.id})" class="text-xs ${item.completed ? 'text-amber-400' : 'text-emerald-400'} hover:underline font-medium">
+                                ${item.completed ? 'Tamamlanmadı İşaretle' : 'Tamamlandı Yap'}
+                            </button>
+                            <span class="text-slate-600">|</span>
+                            <button onclick="deleteAgendaItem(${item.id})" class="text-xs text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openAddAgendaModal() {
+            document.getElementById('agendaDate').value = todayStr;
+            document.getElementById('agendaTitle').value = '';
+            document.getElementById('agendaDesc').value = '';
+            document.getElementById('addAgendaModal').classList.remove('hidden');
+        }
+        function closeAddAgendaModal() { document.getElementById('addAgendaModal').classList.add('hidden'); }
+
+        function saveAgendaItem() {
+            const date = document.getElementById('agendaDate').value;
+            const title = document.getElementById('agendaTitle').value.trim();
+            const desc = document.getElementById('agendaDesc').value.trim();
+
+            if(!date || !title) return alert("Lütfen tarih ve başlık alanlarını doldurun.");
+
+            agendaItems.push({
+                id: Date.now(),
+                date,
+                title,
+                desc,
+                completed: false
+            });
+
+            localStorage.setItem('saha_agendaItems', JSON.stringify(agendaItems));
+            closeAddAgendaModal();
+            renderAgenda();
+        }
+
+        function toggleAgendaStatus(id) {
+            const item = agendaItems.find(i => i.id === id);
+            if(item) {
+                item.completed = !item.completed;
+                localStorage.setItem('saha_agendaItems', JSON.stringify(agendaItems));
+                renderAgenda();
+            }
+        }
+
+        function deleteAgendaItem(id) {
+            agendaItems = agendaItems.filter(i => i.id !== id);
+            localStorage.setItem('saha_agendaItems', JSON.stringify(agendaItems));
+            renderAgenda();
+        }
+
+        function renderNotes() {
+            const container = document.getElementById('notesGridContainer');
+            container.innerHTML = '';
+
+            if(noteItems.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6 sm:col-span-2">Henüz kaydedilmiş not yok.</p>`;
+                return;
+            }
+
+            noteItems.forEach(note => {
+                let pBadge = `<span class="bg-slate-600 text-slate-300 text-[10px] px-2 py-0.5 rounded">Normal</span>`;
+                if(note.priority === 'high') pBadge = `<span class="bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] px-2 py-0.5 rounded font-bold">🚨 Acil / Yüksek</span>`;
+                if(note.priority === 'low') pBadge = `<span class="bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] px-2 py-0.5 rounded">Düşük</span>`;
+
+                container.innerHTML += `
+                    <div class="bg-slate-700/40 p-4 rounded-xl border border-slate-600 space-y-2 flex flex-col justify-between">
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between items-center gap-2">
+                                ${pBadge}
+                                <span class="text-[10px] text-slate-400">${note.date}</span>
+                            </div>
+                            <h4 class="text-sm font-bold text-amber-300">${note.title}</h4>
+                            <p class="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">${note.content}</p>
+                        </div>
+                        <div class="flex justify-end pt-2 border-t border-slate-700/60">
+                            <button onclick="deleteNoteItem(${note.id})" class="text-xs text-rose-400 hover:text-rose-300 transition"><i class="fa-solid fa-trash mr-1"></i>Notu Sil</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openAddNoteModal() {
+            document.getElementById('noteTitle').value = '';
+            document.getElementById('noteContent').value = '';
+            document.getElementById('notePriority').value = 'normal';
+            document.getElementById('addNoteModal').classList.remove('hidden');
+        }
+        function closeAddNoteModal() { document.getElementById('addNoteModal').classList.add('hidden'); }
+
+        function saveNoteItem() {
+            const title = document.getElementById('noteTitle').value.trim();
+            const content = document.getElementById('noteContent').value.trim();
+            const priority = document.getElementById('notePriority').value;
+
+            if(!title || !content) return alert("Lütfen başlık ve not içeriğini doldurun.");
+
+            noteItems.push({
+                id: Date.now(),
+                title,
+                content,
+                priority,
+                date: new Date().toLocaleDateString('tr-TR')
+            });
+
+            localStorage.setItem('saha_noteItems', JSON.stringify(noteItems));
+            closeAddNoteModal();
+            renderNotes();
+        }
+
+        function deleteNoteItem(id) {
+            noteItems = noteItems.filter(n => n.id !== id);
+            localStorage.setItem('saha_noteItems', JSON.stringify(noteItems));
+            renderNotes();
         }
 
         function openAddCourierModal() {
