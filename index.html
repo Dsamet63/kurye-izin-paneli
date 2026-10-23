@@ -119,6 +119,29 @@
 
   let currentUser = {};
 
+  // Zaman kontrolü: Sadece Pazartesi 12:00 ile 23:59 arası izin verir
+  function checkTimeWindow() {
+    const now = new Date();
+    const day = now.getDay(); // 1 = Pazartesi
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const currentTimeNum = hours * 60 + minutes;
+
+    const isMonday = (day === 1);
+    const isAllowedTime = (currentTimeNum >= 720 && currentTimeNum <= 1439); // 12:00 (720. dk) ile 23:59 arası
+
+    return isMonday && isAllowedTime;
+  }
+
+  // Sayfa açıldığında saat ve gün kontrolü yapar
+  window.addEventListener('DOMContentLoaded', () => {
+    if (!checkTimeWindow()) {
+      showError('loginError', 'İzin talebi sadece Pazartesi günleri 12:00 ile 23:59 saatleri arasında yapılabilir. Şu an işlem yapamazsınız.');
+      document.getElementById('loginBtn').disabled = true;
+      document.getElementById('tcInput').disabled = true;
+    }
+  });
+
   function showError(elementId, msg) {
     const el = document.getElementById(elementId);
     el.innerText = msg;
@@ -132,6 +155,13 @@
 
   async function login() {
     hideErrors();
+    
+    // Ekstra güvenlik: Butona basıldığında da zaman aralığını kontrol et
+    if (!checkTimeWindow()) {
+      showError('loginError', 'İzin talep süresi dışındasınız!');
+      return;
+    }
+
     const tc = document.getElementById('tcInput').value.trim();
     const loginBtn = document.getElementById('loginBtn');
 
@@ -221,6 +251,12 @@
 
   async function submitChoice() {
     hideErrors();
+    
+    if (!checkTimeWindow()) {
+      showError('submitError', 'İzin talep süresi sona ermiştir. İşlem yapamazsınız.');
+      return;
+    }
+
     const selected = document.querySelector('input[name="dayOption"]:checked');
     if (!selected) {
       showError('submitError', 'Lütfen listeden kontenjanı uygun bir gün seçiniz.');
